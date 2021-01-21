@@ -30,10 +30,12 @@ bool twisCallback(twis_irqstate_t state, u8 status){
     return ret;
 }
 
+//send command to slave
 void testSlave(){
     twis_defaultPins();             //slave pins
     twis_init( 0x44, twisCallback );//0x44, callback function above
 
+    twim_defaultPins();             //master pins (same as slave)
     twim_address( 0x44 );           //set to our slave address
     twim_baud( F_CPU, 100000ul );   //100kHz
     twim_on();                      //on
