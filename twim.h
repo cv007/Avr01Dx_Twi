@@ -26,9 +26,8 @@ bool twim_wait          (u16 us);
 void twim_defaultPins   ();
 void twim_altPins       ();
 
-//baud
-inline __attribute((always_inline)) static
-void twim_baud   (uint32_t cpuHz, uint32_t twiHz){
+                        inline __attribute((always_inline)) static
+void twim_baud          (uint32_t cpuHz, uint32_t twiHz){
                             int32_t v = cpuHz/twiHz/2.0 + 0.99 - 5;
                             TWI0.MBAUD = v >= 0 ? v : 0;
                         }
