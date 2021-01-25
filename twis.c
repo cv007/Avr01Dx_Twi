@@ -69,12 +69,12 @@ static void     complete        ()      { TWI0.SCTRLB = 2; }
 static void     ack             ()      { TWI0.SCTRLB = 3; } //RESPONSE, ACK
 static void     nack            ()      { TWI0.SCTRLB = 7; } //RESPONSE, NACK
 //v = a copy of SSTATUS (used in isr)
-static bool     isError         (u8 v)  { return v & 0x0C; } //either- COLL, BUSERR
+static bool     isError         (u8 v)  { return (v & 0x0C); } //either- COLL, BUSERR
 static bool     isDataRead      (u8 v)  { return (v & 0x82) == 0x82; } //DIF, DIR(1=R)
 static bool     isDataWrite     (u8 v)  { return (v & 0x82) == 0x80; } //DIF, DIR(0=W)
 static bool     isAddress       (u8 v)  { return (v & 0x41) == 0x41; } //APIF, AP(1=addr)
 static bool     isStop          (u8 v)  { return (v & 0x41) == 0x40; } //APIF, AP(0=stop)
-static bool     isRxNack        (u8 v)  { return v & 0x10; } //RXACK(0=ACK,1=NACK)
+static bool     isRxNack        (u8 v)  { return (v & 0x10); } //RXACK(0=ACK,1=NACK)
 
 
                     //callback function returns true if all is fine
@@ -83,7 +83,7 @@ static bool     isRxNack        (u8 v)  { return v & 0x10; } //RXACK(0=ACK,1=NAC
                         u8 s = status(); //get a copy, so are dealing with 1 point in time
 
                         // collision, buserror, or stop
-                        if( isError(s) ||isStop(s) ){
+                        if( isError(s) || isStop(s) ){
                             isrFuncCallback_(STOPPED, s);
                             return complete();
                         }
@@ -122,7 +122,7 @@ void twis_address2      (u8 v)  { address2(v); } //2nd address
 
 void twis_init          (u8 addr, twis_callback_t cb) {
                             if( ! cb ) return; //assume everything other than 0 is valid
-                            twis_off();
+                            twis_off(); //also clears flags
                             isrFuncCallback_ = cb;
                             address1( addr );
                             irqAllOn();

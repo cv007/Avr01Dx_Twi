@@ -134,14 +134,14 @@ static void     finished        (bool tf) {
     // public:
     //==========
 
-void        twim_callback       (twim_callbackT f) { isrFuncCallback_ = f; }
+void        twim_callback       (twim_callbackT cb) { isrFuncCallback_ = cb; }
 void        twim_address        (u8 v)      { address(v); } //ywi is off after setting address
 void        twim_off            ()          { off(); }
 bool        twim_isBusy         ()          { return isBusy(); } // is irq on
 bool        twim_lastResultOK   ()          { return lastResult_; }
 
 
-            //set default or alternate pins (true = alternate pins)
+                                //set default or alternate pins (true = alternate pins)
 void        twim_defaultPins    () {
                                     TWIM_PULL_DEFAULT();
                                     PORTMUX_DEFAULT();
@@ -156,27 +156,27 @@ void        twim_on             () {
                                     toStateIdle();
                                     on();
                                 }
-            //write+read (or write only, or read only)
+                                //write+read (or write only, or read only)
 void        twim_writeRead      (const u8* wbuf, u16 wn, u8* rbuf, u16 rn) {
                                     txbuf_ = wbuf; txbufEnd_ = &wbuf[wn];
                                     rxbuf_ = rbuf; rxbufEnd_ = &rbuf[rn];
                                     txbuf2_ = 0; txbuf2End_ = 0;
-                                    startIrq( wn ); //if no write, then will skip write
+                                    startIrq( wn ); //if no write (wn==0), then will start a read irq
                                 }
-            //write/write (such as a command, then a buffer)
+                                //write/write (such as a command, then a buffer)
 void        twim_writeWrite     (const u8* wbuf, u16 wn, const u8* wbuf2, u16 wn2) {
                                     txbuf_ = wbuf; txbufEnd_ = &wbuf[wn];
                                     txbuf2_ = wbuf2; txbuf2End_ = &wbuf2[wn2];
                                     rxbuf_ = 0; rxbufEnd_ = 0; //no read
                                     startIrq( 1 ); //write only
                                 }
-            //write only (for easier writeRead use)
+                                //write only (for easier writeRead use)
 void        twim_write          (const u8* wbuf, u16 wn) { twim_writeRead( wbuf, wn, 0, 0); }
 
-            //read only (for easier writeRead use)
-void        twim_read           (u8* rbuf, u16 rn)       { twim_writeRead( 0, 0, rbuf, rn); }
+                                //read only (for easier writeRead use)
+void        twim_read           (u8* rbuf, u16 rn) { twim_writeRead( 0, 0, rbuf, rn); }
 
-            //blocking wait with timeout
+                                //blocking wait with timeout
 bool        twim_wait           (u16 us) {
                                     for( u16 i = 0; i < us; i++, _delay_us(1) ){
                                         if( ! twim_isBusy() ) break;

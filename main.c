@@ -11,17 +11,17 @@
 /*------------------------------------------------------------------------------
     slave - address 0x44, respond to read command 0x55 with SREG value
 ------------------------------------------------------------------------------*/
-bool twisCallback(twis_irqstate_t state, u8 status){
+bool twisCallback(twis_irqstate_t state, u8 statusReg){
     bool ret = true;
     switch( state ){
         case ADDRESSED: //1
-            ret = twis_lastAddress() == 0x44;
+            ret = twis_lastAddress() == 0x44; //for us?
             break;
         case MREAD: //3
-            twis_write( SREG );
+            twis_write( SREG ); //respond
             break;
         case MWRITE: //2
-            ret = (twis_read() == 0x55);
+            ret = (twis_read() == 0x55); //valid command?
             break;
         case STOPPED: //4
             break;
