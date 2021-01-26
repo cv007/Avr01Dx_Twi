@@ -19,3 +19,5 @@ void twis_address2      (u8 SlaveAddress2);
 void twis_init          (u8 SlaveAddress, twis_callback_t callbackFunction);
 void twis_defaultPins   ();
 void twis_altPins       ();
+
+
