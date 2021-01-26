@@ -31,12 +31,12 @@ static void     complete        ()      { TWI0.SCTRLB = 2; }
 static void     ack             ()      { TWI0.SCTRLB = 3; } //RESPONSE, ACK
 static void     nack            ()      { TWI0.SCTRLB = 7; } //RESPONSE, NACK
 //v = a copy of SSTATUS (used in isr)
-static bool     isError         (u8 v)  { return (v & 0x0C); } //either- COLL, BUSERR
-static bool     isDataRead      (u8 v)  { return (v & 0x82) == 0x82; } //DIF, DIR(1=R)
-static bool     isDataWrite     (u8 v)  { return (v & 0x82) == 0x80; } //DIF, DIR(0=W)
-static bool     isAddress       (u8 v)  { return (v & 0x41) == 0x41; } //APIF, AP(1=addr)
-static bool     isStop          (u8 v)  { return (v & 0x41) == 0x40; } //APIF, AP(0=stop)
-static bool     isRxNack        (u8 v)  { return (v & 0x10); } //RXACK(0=ACK,1=NACK)
+static bool     isError         (u8 v)  { return (v & 0x0C); }          //either- COLL, BUSERR
+static bool     isDataRead      (u8 v)  { return (v & 0x82) == 0x82; }  //DIF, DIR(1=R)
+static bool     isDataWrite     (u8 v)  { return (v & 0x82) == 0x80; }  //DIF, DIR(0=W)
+static bool     isAddress       (u8 v)  { return (v & 0x41) == 0x41; }  //APIF, AP(1=addr)
+static bool     isStop          (u8 v)  { return (v & 0x41) == 0x40; }  //APIF, AP(0=stop)
+static bool     isRxNack        (u8 v)  { return (v & 0x10); }          //RXACK(0=ACK,1=NACK)
 
 
                     //callback function returns true if all is fine
@@ -79,12 +79,12 @@ void twis_altPins       ()      { TWI_PULL_ALT(); TWI_PORTMUX_ALT(); }
 void twis_off           ()      { irqAllOff(); off(); clearFlags(); }
 void twis_write         (u8 v)  { write(v); }
 u8   twis_read          ()      { return read(); }
-u8   twis_lastAddress   ()      { return lastAddress_; } //last address we responded to
-void twis_address2      (u8 v)  { address2(v); } //2nd address
+u8   twis_lastAddress   ()      { return lastAddress_; }    //last address we responded to
+void twis_address2      (u8 v)  { address2(v); }            //2nd address
 
 void twis_init          (u8 addr, twis_callback_t cb) {
-                            if( ! cb ) return; //assume everything other than 0 is valid
-                            twis_off(); //also clears flags
+                            if( ! cb ) return;              //assume everything other than 0 is valid
+                            twis_off();                     //also clears flags
                             isrFuncCallback_ = cb;
                             address1( addr );
                             irqAllOn();
