@@ -18,7 +18,7 @@ typedef uint16_t u16;
 enum { SLAVE_ADDRESS = 0x68 };
 enum { NORMAL = 100000ul, FAST = 4000000ul };
 enum { US_TIMEOUT = 2000 };
-enum { TWIPINS_ALT = 0 }; //0=defualt pins,1=alternate pins
+enum { TWIPINS_ALT = 0 }; //0=default pins,1=alternate pins
 
 //normally would have a struct of all register bits,
 //but just have seconds here for a simple example
