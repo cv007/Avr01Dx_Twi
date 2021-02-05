@@ -27,9 +27,8 @@ static void     irqAllOn        ()      { TWI0.SCTRLA |= 0xE0; }
 static void     irqAllOff       ()      { TWI0.SCTRLA &= ~0xE0; }
 static u8       status          ()      { return TWI0.SSTATUS; }
 static void     clearFlags      ()      { TWI0.SSTATUS = 0xCC; }
-static void     complete        ()      { TWI0.SCTRLB = 2; }
+static void     nackComplete    ()      { TWI0.SCTRLB = 6; } //COMPTRANS, NACK
 static void     ack             ()      { TWI0.SCTRLB = 3; } //RESPONSE, ACK
-static void     nack            ()      { TWI0.SCTRLB = 7; } //RESPONSE, NACK
 //v = a copy of SSTATUS (used in isr)
 static bool     isError         (u8 v)  { return (v & 0x0C); }          //either- COLL, BUSERR
 static bool     isDataRead      (u8 v)  { return (v & 0x82) == 0x82; }  //DIF, DIR(1=R)
@@ -47,26 +46,26 @@ static bool     isRxNack        (u8 v)  { return (v & 0x10); }          //RXACK(
                         // collision, buserror, or stop
                         if( isError(s) || isStop(s) ){
                             isrFuncCallback_(STOPPED, s);
-                            return complete();
+                            return nackComplete();
                         }
 
                         //address
                         if( isAddress(s) ){
                             lastAddress_ = read()>>1;
                             is1stbyte = true;
-                            return isrFuncCallback_(ADDRESSED, s) ? ack() : nack();
+                            return isrFuncCallback_(ADDRESSED, s) ? ack() : nackComplete();
                         }
 
                         //data, master read (slave data -> master)
                         if( isDataRead(s) ){
-                            if( ! is1stbyte && isRxNack(s) ) return complete();
+                            if( ! is1stbyte && isRxNack(s) ) return nackComplete();
                             is1stbyte = false;
-                            return isrFuncCallback_(MREAD, s) ? ack() : complete();
+                            return isrFuncCallback_(MREAD, s) ? ack() : nackComplete();
                         }
 
                         //data, master write (master data -> slave)
                         if( isDataWrite(s) ){
-                            return isrFuncCallback_(MWRITE,s) ? ack() : nack();
+                            return isrFuncCallback_(MWRITE,s) ? ack() : nackComplete();
                         }
                     }
 
