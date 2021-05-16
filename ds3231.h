@@ -2,8 +2,7 @@
 //======================================================================
 //  ds3231.h
 //======================================================================
-#include <stdint.h>
+#include "MyAvr.h"
 
-typedef uint8_t u8;
-
-bool ds3231_seconds(u8* seconds); //return true = success
+                bool 
+ds3231_seconds  (u8* seconds); //return true = success
