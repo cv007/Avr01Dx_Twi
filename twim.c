@@ -135,9 +135,11 @@ void    twim_read           (u8* rbuf, u16 rn) { twim_writeRead( 0, 0, rbuf, rn)
 //blocking wait with timeout
 bool    twim_waitUS         (u16 us)
                             {
-                            for( u16 i = 0; i < us; i++, _delay_us(1) ) {
-                                if( ! twim_isBusy() ) break;
-                                }
-                            return twim_lastResultOK();
+                            while( _delay_us(1), --us && twim_isBusy() ){}
+                            return twim_lastResultOK(); 
+                            //lastResult_ is set to false at start of transaction
+                            //will still be false if timeout
+                            //check twim_isBusy() on your own to see if was a timeout (if returned false)
                             }
+
 
