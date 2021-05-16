@@ -4,5 +4,4 @@
 //======================================================================
 #include "MyAvr.h"
 
-                bool 
-ds3231_seconds  (u8* seconds); //return true = success
+bool ds3231_seconds      (u8* seconds); //return true = success
