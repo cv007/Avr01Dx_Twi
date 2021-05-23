@@ -46,8 +46,8 @@ static void NACKstop        () { TWI0.MCTRLB = NACK|STOP; }
 static void address         (u8 v) { off(); TWI0.MADDR = v<<1; } //off so no start produced
 static void startRead       () { ackActionACK(); TWI0.MADDR |= RW; } //reuse existing address
 static void startWrite      () { TWI0.MADDR &= ~RW; }   //reuse existing address
-static void dataW           (u8 v) { TWI0.MDATA = v; }
-static u8   dataR           () { return TWI0.MDATA; }
+static void write           (u8 v) { TWI0.MDATA = v; }
+static u8   read            () { return TWI0.MDATA; }
 static u8   status          () { return TWI0.MSTATUS; }
 static bool isBusy          () { return TWI0.MCTRLA & RWIEN; }
 
@@ -78,13 +78,13 @@ static void finished        (bool tf)
     if( s & ANYERR ) return finished( false );
     //read
     if( s == READOK ){
-        *rxbuf_++ = dataR();
+        *rxbuf_++ = read();
         return rxbuf_ < rxbufEnd_ ? ACKread() : finished( true );
         }
     //write
     if( s == WRITEOK ){
-        if( txbuf_ < txbufEnd_ ) return dataW( *txbuf_++ ); //more data
-        if( txbuf2_ < txbuf2End_ ) return dataW( *txbuf2_++ ); //more data
+        if( txbuf_ < txbufEnd_ ) return write( *txbuf_++ ); //more data
+        if( txbuf2_ < txbuf2End_ ) return write( *txbuf2_++ ); //more data
         return rxbuf_ ? startRead() : finished( true ); //switch to read? or done
         }
     //unknown, or a write nack
