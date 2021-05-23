@@ -39,7 +39,7 @@ static bool isRxNack        (u8 v) { return (v & 0x10); }          //RXACK(0=ACK
     ISR (TWI0_TWIS_vect) 
     {
     static bool is1stbyte; //so can ignore rxack on first master read
-    u8 s = status(); //get a copy, so are dealing with 1 point in time
+    u8 s = status(); //get a copy of status register
 
     // collision, buserror, or stop
     if( isError(s) || isStop(s) ){
