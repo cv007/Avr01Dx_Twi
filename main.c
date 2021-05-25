@@ -12,25 +12,21 @@ bool twisCallback(twis_irqstate_t state, u8 statusReg){
     bool ret = true;
     static u8 v;
 
-    switch( state ){
+    switch( state ) {
         case TWIS_ADDRESSED: //1
             ret = twis_lastAddress() == 0x44; //for us?
             break;
         case TWIS_MREAD: //3
-            twis_write( v ); //respond
+            twis_write( v++ ); //respond
             break;
         case TWIS_MWRITE: //2
             ret = (twis_read() == 0x55); //valid command?
             break;
-        case TWIS_STOPPED: //4
-            v++;
-            break;
+        case TWIS_STOPPED:
         case TWIS_ERROR:
-        case TWIS_UNKNOWN:
             ret = false;
             break;
-
-    }
+        }
     return ret;
 }
 
@@ -55,13 +51,15 @@ void testSlave(){
 int main(){
 
     while(1){
+
         testSlave();
         _delay_ms(10);
 
         u8 sec;
         ds3231_seconds( &sec );
         _delay_ms(1000);
-    }
+
+        }
 
 }
 #endif
@@ -73,7 +71,7 @@ int main(){
 bool twisCallback(twis_irqstate_t state, u8 statusReg){
     bool ret = true;
 
-    switch( state ){
+    switch( state ) {
         case TWIS_ADDRESSED:
             ret = twis_lastAddress() == 0x51; //for us?
             break;
@@ -83,10 +81,9 @@ bool twisCallback(twis_irqstate_t state, u8 statusReg){
         case TWIS_MWRITE:
         case TWIS_STOPPED:
         case TWIS_ERROR:
-        case TWIS_UNKNOWN:
             ret = false;
             break;
-    }
+        }
     return ret;
 }
 
@@ -109,9 +106,11 @@ void testSlave(){
 //watch w/logic analyzer
 int main(){
 
-    while(1){
+    while(1) {
+
         testSlave();
         _delay_ms(100);
-    }
+
+        }
 
 }

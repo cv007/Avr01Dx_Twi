@@ -29,7 +29,6 @@ static void ack             ()      { TWI0.SCTRLB = 3; } //RESPONSE, ACK
 
                             //v = a copy of SSTATUS (used in isr)
                             //DIF:APIF:CLKHOLD:RXACK:COLL:BUSERR:DIR:AP
-static bool isError         (u8 v)  { return (v & 0x0C); }          //either- COLL, BUSERR
 static bool isDataRead      (u8 v)  { return (v & 0x82) == 0x82; }  //DIF, DIR(1=R)
 static bool isDataWrite     (u8 v)  { return (v & 0x82) == 0x80; }  //DIF, DIR(0=W)
 static bool isAddress       (u8 v)  { return (v & 0x41) == 0x41; }  //APIF, AP(1=addr)
@@ -41,11 +40,10 @@ static bool isRxNack        (u8 v)  { return (v & 0x10); }          //RXACK(0=AC
 ISR (TWI0_TWIS_vect)        {
                             static bool is1st;      //so can ignore rxack on first master read
                             u8 s = status();        //get a copy of status
-                            twis_irqstate_t state = isError(s)     ? TWIS_ERROR :
-                                                    isStop(s)      ? TWIS_STOPPED :
+                            twis_irqstate_t state = isStop(s)      ? TWIS_STOPPED :
                                                     isAddress(s)   ? TWIS_ADDRESSED :
                                                     isDataRead(s)  ? TWIS_MREAD :
-                                                    isDataWrite(s) ? TWIS_MWRITE : TWIS_UNKNOWN;
+                                                    isDataWrite(s) ? TWIS_MWRITE : TWIS_ERROR;
                             bool nacked = isRxNack(s);
                             bool done = false;
 
@@ -56,7 +54,7 @@ ISR (TWI0_TWIS_vect)        {
                             else if( state == TWIS_MREAD ) {
                                 if( is1st ) is1st = false; else done = nacked;
                                 }
-                            else done = true; //error,stopped,unknown
+                            else done = true; //error,stopped
 
                             if( ! isrFuncCallback_(state, s) ) done = true;
                             if( done ) nackComplete(); else ack();
