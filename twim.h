@@ -20,7 +20,7 @@ bool twim_waitUS        (u16 microseconds);
 void twim_defaultPins   ();
 void twim_altPins       ();
 
-                        __attribute((always_inline)) inline static 
+                        __attribute((always_inline)) inline static
 void twim_baud          (uint32_t cpuHz, uint32_t twiHz)
                         {
                         int32_t v = cpuHz/twiHz/2 - 5;

@@ -4,7 +4,8 @@
 ------------------------------------------------------------------------------*/
 #include "MyAvr.h"
 
-typedef enum { ADDRESSED, MREAD, MWRITE, STOPPED } twis_irqstate_t;
+typedef enum { TWIS_ADDRESSED, TWIS_MREAD, TWIS_MWRITE, TWIS_STOPPED,
+               TWIS_ERROR, TWIS_UNKNOWN } twis_irqstate_t;
 typedef bool(*twis_callback_t)(twis_irqstate_t state, u8 statusReg);
 
 void twis_off           ();

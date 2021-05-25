@@ -49,7 +49,7 @@ static bool readAll     ()
     // public:
     //==========
 
-//blocking, with timeout
+                        //blocking, with timeout
 bool    ds3231_seconds  (u8* seconds)
                         {
                         init();
