@@ -41,13 +41,13 @@ static bool isError         (u8 v)  { return (v & 0xC0); }          //COLL,BUSER
 ISR (TWI0_TWIS_vect)        {
                             static bool is1st;      //so can ignore rxack on first master read
                             u8 s = status();        //get a copy of status
-                            twis_irqstate_t state = isError(s)     ? TWIS_ERROR :
+                            twis_irqstate_t state = isError(s)     ? TWIS_ERROR : //do first
                                                     isStop(s)      ? TWIS_STOPPED :
                                                     isAddress(s)   ? TWIS_ADDRESSED :
                                                     isDataRead(s)  ? TWIS_MREAD :
                                                     isDataWrite(s) ? TWIS_MWRITE : TWIS_ERROR;
                             bool nacked = isRxNack(s);
-                            bool done = false;
+                            bool done = false; //assume not done
 
                             if( state == TWIS_ADDRESSED ) {
                                 lastAddress_ = read()>>1;
@@ -58,7 +58,7 @@ ISR (TWI0_TWIS_vect)        {
                                 }
                             else if( state != TWIS_MWRITE ) done = true; //error or stopped
 
-                            if( ! isrFuncCallback_(state, s) ) done = true;
+                            if( false == isrFuncCallback_(state, s) ) done = true;
                             if( done ) nackComplete(); else ack();
                             }
 
