@@ -13,12 +13,13 @@
 static volatile u8      lastAddress_; //could also skip this, and simply make
                                       //the callback do a read in the TWIS_ADDRESSED
                                       //state if it needs to know the address when
-                                      //multiple addresses are in use
+                                      //multiple addresses are in use, but will just
+                                      //store it here so callback does not need to
 static twis_callback_t  isrFuncCallback_;
 
 
-static void address1        (u8 v)  { TWI0.SADDR = v<<1; }
-static void address2        (u8 v)  { TWI0.SADDRMASK = (v<<1)|1; }
+static void address1        (u8 v) { TWI0.SADDR = (v<<1)|1; } //gencall enabled, so check address in callback
+static void address2        (u8 v, bool nomask) { TWI0.SADDRMASK = (v<<1)|nomask; }
 static void off             ()      { TWI0.SCTRLA &= ~1; }
 static void on              ()      { TWI0.SCTRLA |= 1; }
 static u8   read            ()      { return TWI0.SDATA; }
@@ -74,8 +75,9 @@ void    twis_altPins        ()      { TWI_PULL_ALT(); TWI_PORTMUX_ALT(); }
 void    twis_off            ()      { irqAllOff(); off(); clearFlags(); }
 void    twis_write          (u8 v)  { write(v); }
 u8      twis_read           ()      { return read(); }
-u8      twis_lastAddress    ()      { return lastAddress_; } //last address we responded to
-void    twis_address2       (u8 v)  { address2(v); }     //2nd address
+u8      twis_lastAddress    ()      { return lastAddress_; }    //last address we responded to
+void    twis_address2       (u8 v)  { address2(v, true); }      //2nd address
+void    twis_addressMask    (u8 v)  { address2(v, false); }     //address mask (no 2nd address)
 
 void    twis_init           (u8 addr, twis_callback_t cb)
                             {
