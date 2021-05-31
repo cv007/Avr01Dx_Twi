@@ -10,7 +10,10 @@
     //  private:
     //============
 
-static volatile u8      lastAddress_;
+static volatile u8      lastAddress_; //could also skip this, and simply make
+                                      //the callback do a read in the TWIS_ADDRESSED
+                                      //state if it needs to know the address when
+                                      //multiple addresses are in use
 static twis_callback_t  isrFuncCallback_;
 
 
