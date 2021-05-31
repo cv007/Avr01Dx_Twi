@@ -8,7 +8,7 @@
     twis_init( 0x40, myCallback);
 
     callback function, isr provides state and status register
-    (status register not really necessary, but can use for trouvleshooting)
+    (status register not really necessary, but can use for troubleshooting)
 
     bool myCalback(twis_irqstate_t state, u8 statusReg){
         you have the enum states to deal with as needed
