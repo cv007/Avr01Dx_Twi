@@ -1,10 +1,10 @@
 #include "MyAvr.h"
 
-#include "ds3231.h"
 #include "twis.h"
 #include "twim.h"
 
 #if 0
+#include "ds3231.h"
 /*------------------------------------------------------------------------------
     slave - address 0x44, respond to read command 0x55 with v value
 ------------------------------------------------------------------------------*/
@@ -42,7 +42,6 @@ void testSlave(){
     u8 rdbuf[1];                    //read 1 byte
     twim_writeRead( wrbuf, 1, rdbuf, 1 ); //do transaction, 1 write, 1 read
     twim_waitUS( 3000 );            //wait for complettion or timeout (3ms)
-
 }
 
 
@@ -63,7 +62,7 @@ int main(){
 }
 #endif
 
-
+#if 1
 /*------------------------------------------------------------------------------
     slave - address 0x51
 ------------------------------------------------------------------------------*/
@@ -111,3 +110,4 @@ int main(){
         }
 
 }
+#endif

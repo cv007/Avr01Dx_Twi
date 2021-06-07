@@ -33,9 +33,8 @@
 static void init        ()
                         {
                         if( TWIPINS_ALT ) twim_altPins(); else twim_defaultPins();
-                        twim_address( SLAVE_ADDRESS );
                         twim_baud( F_CPU, NORMAL );
-                        twim_on();
+                        twim_on( SLAVE_ADDRESS );
                         }
 
 static bool readAll     ()
