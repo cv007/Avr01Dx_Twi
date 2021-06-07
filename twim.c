@@ -22,7 +22,7 @@ static u8*              rxbuf_;
 static const u8*        rxbufEnd_;
 static volatile bool    lastResult_; //1=ok,0=fail
 
-//our own enums
+//local enums
 //MCTRLB flush3|ack2|cmd1:0
 enum { ACK = 0, READ = 2, STOP = 3, NACK = 4,  FLUSH = 8 };
 //MSTATUS RIF7|WIF6|CLKHOLD5|RXACK4|ARBLOST3|BUSERR2|BUSSTATE1:0
@@ -35,21 +35,21 @@ enum { UNKNOWN = 0, IDLE, OWNER, BUSBUSY, BUSMASK = 3 }; //bus state
 enum { READOK = RIF|CLKHOLD|OWNER, WRITEOK = WIF|CLKHOLD|OWNER };
 enum { ENABLE = 1 }; //on/off
 
-static void on              ()      { TWI0.MCTRLA |= ENABLE; }
-static void off             ()      { TWI0.MCTRLA = 0; }
-static void irqAllOn        ()      { TWI0.MCTRLA |=  RWIEN; }
-static void irqAllOff       ()      { TWI0.MCTRLA &= ~RWIEN; }
-static void toStateIdle     ()      { TWI0.MSTATUS = ALLFLAGS|IDLE; } //clear flags, set to IDLE
-static void ackActionACK    ()      { TWI0.MCTRLB = ACK; }
-static void ACKread         ()      { TWI0.MCTRLB = READ; }
-static void NACKstop        ()      { TWI0.MCTRLB = NACK|STOP; }
-static void address         (u8 v)  { off(); TWI0.MADDR = v<<1; } //off so no start produced
-static void startRead       ()      { ackActionACK(); TWI0.MADDR |= RW; } //reuse existing address
-static void startWrite      ()      { TWI0.MADDR &= ~RW; }   //reuse existing address
-static void write           (u8 v)  { TWI0.MDATA = v; }
-static u8   read            ()      { return TWI0.MDATA; }
-static u8   status          ()      { return TWI0.MSTATUS; }
-static bool isBusy          ()      { return TWI0.MCTRLA & RWIEN; }
+static void on              () { TWI0.MCTRLA |= ENABLE; }
+static void off             () { TWI0.MCTRLA = 0; }
+static void irqAllOn        () { TWI0.MCTRLA |=  RWIEN; }
+static void irqAllOff       () { TWI0.MCTRLA &= ~RWIEN; }
+static void toStateIdle     () { TWI0.MSTATUS = ALLFLAGS|IDLE; } //clear flags, set to IDLE
+static void ackActionACK    () { TWI0.MCTRLB = ACK; }
+static void ACKread         () { TWI0.MCTRLB = READ; }
+static void NACKstop        () { TWI0.MCTRLB = NACK|STOP; }
+static void address         (u8 v) { off(); TWI0.MADDR = v<<1; } //off so no start produced
+static void startRead       () { ackActionACK(); TWI0.MADDR |= RW; } //reuse existing address
+static void startWrite      () { TWI0.MADDR &= ~RW; }   //reuse existing address
+static void write           (u8 v) { TWI0.MDATA = v; }
+static u8   read            () { return TWI0.MDATA; }
+static u8   status          () { return TWI0.MSTATUS; }
+static bool isBusy          () { return TWI0.MCTRLA & RWIEN; }
 
                             //start a read or write, enable irq
 static void startIrq        (bool wr)
@@ -57,7 +57,6 @@ static void startIrq        (bool wr)
                             if( wr ) startWrite(); else startRead();
                             lastResult_ = false;
                             irqAllOn();
-                            sei();
                             }
 
                             //for isr use
@@ -95,16 +94,14 @@ ISR(TWI0_TWIM_vect)         {
     //==========
 
 void    twim_callback       (twim_callbackT cb) { isrFuncCallback_ = cb; } //optional, else use twim_waitUS
-void    twim_address        (u8 v)  { address(v); } //twi is off after setting address
-void    twim_off            ()      { off(); }
-void    twim_on             ()      { off(); toStateIdle(); on(); }
-bool    twim_isBusy         ()      { return isBusy(); } //if irq on, is busy
-bool    twim_lastResultOK   ()      { return lastResult_; }
+void    twim_off            () { off(); }
+void    twim_on             (u8 addr) { address(addr); toStateIdle(); on(); }
+bool    twim_isBusy         () { return isBusy(); } //if irq on, is busy
+bool    twim_lastResultOK   () { return lastResult_; }
 
                             //set default or alternate pins
-void    twim_defaultPins    ()      { TWI_PULL_DEFAULT(); TWI_PORTMUX_DEFAULT(); }
-void    twim_altPins        ()      { TWI_PULL_ALT(); TWI_PORTMUX_ALT(); }
-
+void    twim_defaultPins    () { TWI_PULL_DEFAULT(); TWI_PORTMUX_DEFAULT(); }
+void    twim_altPins        () { TWI_PULL_ALT(); TWI_PORTMUX_ALT(); }
 
 
                             //write+read (or write only, or read only)

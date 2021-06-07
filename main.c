@@ -36,9 +36,8 @@ void testSlave(){
     twis_init( 0x44, twisCallback );//0x44, callback function above
 
     twim_defaultPins();             //master pins (same as slave)
-    twim_address( 0x44 );           //set to our slave address
     twim_baud( F_CPU, 100000ul );   //100kHz
-    twim_on();                      //on
+    twim_on( 0x44 );                //on, slave address 0x44
     u8 wrbuf[1] = { 0x55 };         //command
     u8 rdbuf[1];                    //read 1 byte
     twim_writeRead( wrbuf, 1, rdbuf, 1 ); //do transaction, 1 write, 1 read
@@ -73,7 +72,7 @@ bool twisCallback(twis_irqstate_t state, u8 statusReg){
 
     switch( state ) {
         case TWIS_ADDRESSED:
-            ret = twis_lastAddress() == 0x51; //for us?
+            ret = (twis_lastAddress() == 0x51); //for us?
             break;
         case TWIS_MREAD:
             twis_write( statusReg ); //respond (just send status register value)
@@ -93,13 +92,11 @@ void testSlave(){
     twis_init( 0x51, twisCallback );//0x51, callback function above
 
     twim_defaultPins();             //master pins (same as slave)
-    twim_address( 0x51 );           //set to our slave address
     twim_baud( F_CPU, 100000ul );   //100kHz
-    twim_on();                      //on
+    twim_on( 0x51 );                //on, slave address 0x51
     u8 rdbuf[5];                    //read 5 bytes
     twim_read( rdbuf, sizeof(rdbuf) );//do transaction, read n bytes
     twim_waitUS( 3000 );            //wait for complettion or timeout (3ms)
-
 }
 
 

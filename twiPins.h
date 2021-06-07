@@ -34,7 +34,7 @@ default SDA      PA2          PB1         PA1
 #elif defined(PORTMUX_CTRLB) && !defined(PORTMUX_TWI0_bm)
     #define TWI_PORTMUX_DEFAULT()
     #define TWI_PORTMUX_ALT()
-    #define TWI_PULL_DEFAULT()      PORTA.PIN2CTRL |= 1<<4; PORTA.PIN1CTRL |= 1<<4
+    #define TWI_PULL_DEFAULT()      PORTA.PIN2CTRL |= 1<<3; PORTA.PIN1CTRL |= 1<<3
     #define TWI_PULL_ALT()          TWIS_PULL_DEFAULT()
 //unknown
 #else

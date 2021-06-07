@@ -6,6 +6,7 @@
     twis_defaultPins();
     2. init with address and callback function
     twis_init( 0x40, myCallback);
+    3. enable interrupts via sei() (avr/interrupts.h)
 
     optional - set a 2nd address, or an address mask, can be set at anytime
 
@@ -29,7 +30,7 @@
           when in TWIS_ADDRESSED state (simply enabled to eliminate one more
           option to set- most likely never seen but if so you can ignore in the
           callback by only returning true when dealing with an address you
-          want to respond to- which will be true in any case)
+          want to respond to)
 ------------------------------------------------------------------------------*/
 #include "MyAvr.h"
 
