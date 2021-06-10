@@ -48,6 +48,7 @@ void testSlave(){
 //watch w/logic analyzer
 int main(){
 
+    sei();
     while(1){
 
         testSlave();
@@ -102,6 +103,7 @@ void testSlave(){
 //watch w/logic analyzer
 int main(){
 
+    sei();
     while(1) {
 
         testSlave();
