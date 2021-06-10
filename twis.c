@@ -38,7 +38,7 @@ static bool isDataWrite     (u8 v) { return (v & 0x82) == 0x80; }  //DIF, DIR(0=
 static bool isAddress       (u8 v) { return (v & 0x41) == 0x41; }  //APIF, AP(1=addr)
 static bool isStop          (u8 v) { return (v & 0x41) == 0x40; }  //APIF, AP(0=stop)
 static bool isRxNack        (u8 v) { return (v & 0x10); }          //RXACK(0=ACK,1=NACK)
-static bool isError         (u8 v) { return (v & 0xC0); }          //COLL,BUSERR
+static bool isError         (u8 v) { return (v & 0x0C); }          //COLL,BUSERR
 
 
                             //callback function returns true if want to proceed
