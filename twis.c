@@ -43,9 +43,6 @@ static bool isStop          (u8 v) { return (v & APIF_APbm) == APIF_STOP; }     
 static bool isRxNack        (u8 v) { return (v & RXNACKbm); }                   //RXACK(0=ACK,1=NACK)
 static bool isError         (u8 v) { return (v & ERRbm); }                      //COLL,BUSERR
 
-
-
-
                             //callback function returns true if want to proceed
 ISR                         (TWI0_TWIS_vect)
                             {
@@ -71,7 +68,6 @@ ISR                         (TWI0_TWIS_vect)
                             if( false == isrFuncCallback_(state, s) ) done = true;
                             if( done ) nackComplete(); else ack();
                             }
-
     //============
     // public:
     //============
@@ -94,5 +90,3 @@ void    twis_init           (u8 addr, twis_callback_t cb)
                             irqAllOn();
                             on();
                             }
-
-
