@@ -3,9 +3,9 @@
     twis.h - Twi slave
 
     1. select pins to use- default or alternate
-    twis_defaultPins();
+        twis_defaultPins();
     2. init with address and callback function
-    twis_init( 0x40, myCallback);
+        twis_init( 0x40, myCallback);
     3. enable interrupts via sei() (avr/interrupts.h)
 
     optional - set a 2nd address, or an address mask, can be set at anytime
@@ -36,6 +36,7 @@
 
 typedef enum { TWIS_ADDRESSED, TWIS_MREAD, TWIS_MWRITE, TWIS_STOPPED,
                TWIS_ERROR } twis_irqstate_t;
+
 typedef bool(*twis_callback_t)(twis_irqstate_t state, u8 statusReg);
 
 void twis_off           ();
@@ -47,5 +48,3 @@ void twis_addressMask   (u8 SlaveAddressMask); //no 2nd address
 void twis_init          (u8 SlaveAddress, twis_callback_t callbackFunction);
 void twis_defaultPins   ();
 void twis_altPins       ();
-
-

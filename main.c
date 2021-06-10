@@ -48,7 +48,6 @@ void testSlave(){
 //watch w/logic analyzer
 int main(){
 
-    sei();
     while(1){
 
         testSlave();
@@ -82,6 +81,7 @@ bool twisCallback(twis_irqstate_t state, u8 statusReg){
         case TWIS_ERROR:
             ret = false;
             break;
+
         }
     return ret;
 }

@@ -31,14 +31,19 @@ static void clearFlags      () { TWI0.SSTATUS = 0xCC; }
 static void nackComplete    () { TWI0.SCTRLB = 6; } //COMPTRANS, NACK
 static void ack             () { TWI0.SCTRLB = 3; } //RESPONSE, ACK
 
+//DIF:APIF:CLKHOLD:RXACK:COLL:BUSERR:DIR:AP
+enum { DIF_DIRbm = 0x82, APIF_APbm = 0x41, RXNACKbm = 0x10, ERRbm = 0x0C,
+       DIF_R = 0x82, DIF_W = 0x80, APIF_ADDRbm = 0x41, APIF_STOPbm = 0x40 };
+
                             //v = a copy of SSTATUS (used in isr)
-                            //DIF:APIF:CLKHOLD:RXACK:COLL:BUSERR:DIR:AP
-static bool isDataRead      (u8 v) { return (v & 0x82) == 0x82; }  //DIF, DIR(1=R)
-static bool isDataWrite     (u8 v) { return (v & 0x82) == 0x80; }  //DIF, DIR(0=W)
-static bool isAddress       (u8 v) { return (v & 0x41) == 0x41; }  //APIF, AP(1=addr)
-static bool isStop          (u8 v) { return (v & 0x41) == 0x40; }  //APIF, AP(0=stop)
-static bool isRxNack        (u8 v) { return (v & 0x10); }          //RXACK(0=ACK,1=NACK)
-static bool isError         (u8 v) { return (v & 0x0C); }          //COLL,BUSERR
+static bool isDataRead      (u8 v) { return (v & DIF_DIRbm) == DIF_R; }         //DIF, DIR(1=R)
+static bool isDataWrite     (u8 v) { return (v & DIF_DIRbm) == DIF_W; }         //DIF, DIR(0=W)
+static bool isAddress       (u8 v) { return (v & APIF_APbm) == APIF_ADDRbm; }   //APIF, AP(1=addr)
+static bool isStop          (u8 v) { return (v & APIF_APbm) == APIF_STOPbm; }   //APIF, AP(0=stop)
+static bool isRxNack        (u8 v) { return (v & RXNACKbm); }                   //RXACK(0=ACK,1=NACK)
+static bool isError         (u8 v) { return (v & ERRbm); }                      //COLL,BUSERR
+
+
 
 
                             //callback function returns true if want to proceed
