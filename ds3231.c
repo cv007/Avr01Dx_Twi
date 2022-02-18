@@ -39,7 +39,7 @@ static void init        ()
 
 static bool readAll     ()
                         {
-                        uint8_t wrbuf[0] = { 0 }; //reg address start
+                        uint8_t wrbuf[1] = { 0 }; //reg address start
                         twim_writeRead( wrbuf, 1, registers.all, sizeof registers.all );
                         return twim_waitUS( US_TIMEOUT );
                         }
