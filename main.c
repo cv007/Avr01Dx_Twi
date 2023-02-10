@@ -139,18 +139,22 @@ blinkerWrite    (u8 reg, const u8* v, u8 vlen)
                 return ret;
                 }
 
-               static bool
-blinkerRead    (u8 reg, u8* v, u8 vlen)
-               {
-               twim0_stdPins();
-               twim0_baud( F_CPU, 100000ul );
-               twim0_on( BLINKER_SLAVE_ADDRESS );
-               twim0_writeRead( &reg, 1, v, vlen ); //write register address, read value(s)
-               bool ret = twim0_waitUS( 3000 );
-               twim0_off();
-               return ret;
-               }
+                static bool
+blinkerRead     (u8 reg, u8* v, u8 vlen)
+                {
+                twim0_stdPins();
+                twim0_baud( F_CPU, 100000ul );
+                twim0_on( BLINKER_SLAVE_ADDRESS );
+                twim0_writeRead( &reg, 1, v, vlen ); //write register address, read value(s)
+                bool ret = twim0_waitUS( 3000 );
+                twim0_off();
+                return ret;
+                }
 
+
+/*------------------------------------------------------------------------------
+    main
+------------------------------------------------------------------------------*/
                 int
 main            ()
                 {
@@ -173,20 +177,22 @@ main            ()
 
                 while(1) {
 
+                    //keep idx inside table
                     if( idx >= sizeof(onOffTbl)/sizeof(onOffTbl[0]) ) idx = 0;
 
-                    //write 2 values starting at ON time register (master->slave)
+                    //write 2 values starting at ONTIME register (master->slave)
                     if( ! blinkerWrite(BLINKER_ONTIME, &onOffTbl[idx], 2) ){
-                        _delay_ms( 1000 ); //failed, delay
-                        continue; //and try again
+                        _delay_ms( 1000 );  //failed, so delay
+                        continue;           //and try again
                         }
+                    //next pair
                     idx += 2;
 
-                    //get value from register 0 (should be same as blinkN initially set to)
+                    //get value from register 0 (should be same as blinkN initial value above)
                     //if any error set blinkN to high value to indicate a problem
                     if( ! blinkerRead( 0, &blinkN, 1) ) blinkN = 100;
 
-                    //blink N times (slave is doing this)
+                    //blink N times (slave Blinker is doing this)
                     for( u8 i = 0; i < blinkN; i++ ){
                         pinSet( led, 1 );
                         waitMS( blinker.onTime * 10 );
