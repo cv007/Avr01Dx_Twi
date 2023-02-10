@@ -3,79 +3,83 @@
 #include "twis0.h"
 #include "twim0.h"
 
-static u8 led_onMSx10;
-static u8 led_offMSx10;
+/*------------------------------------------------------------------------------
+    demonstrate twi0 usage, both master and slave communicating on same device
+    tested with an ATtiny416 Xplained Nano (led is PB5, inverted)
+------------------------------------------------------------------------------*/
 
-enum { TWIS_ON_TIMEx10ms = 8, TWIS_OFF_TIMEx10ms, TWIS0_MY_ADDRESS = 0x51 };
-
-typedef struct { PORT_t* port; u8 pin; bool invert; } pin_t;
-static const pin_t led = { &PORTB, 5, true }; //PB5, low is on
 
 
 /*------------------------------------------------------------------------------
-    twi0 slave - simulate some i2c device, led blinker device in this case
+    Blinker I2C device
 
         slave address 0x51
 
-        our slave device has a register at address 0x08 named ON_TIMEx10ms,
-            and an address of 0x09 named OFF_TIMEx10ms
-        the ON_TIMEx10ms value will determine the led blink on time-
+        our slave device has a register at address 0x08 named onTime,
+            and an address of 0x09 named offTime
+        the onTime value will determine the led blink on time-
             0 = off
             1 = 10ms on
             255 = 2550ms on
-        the OFF_TIMEx10ms value will determine the led off time (if ON_TIMEx10ms not 0)-
+        the offTime value will determine the led off time-
             0 = off
             1 = 10ms off
             255 = 2550ms off
 
-        register address will auto increment
+        register address will auto increment after a write or read (if write
+            was not a register address write), will roll over from end to beginning
 
-        to write a new value to ON_TIMEx10ms or OFF_TIMEx10ms
+        to write a new value to onTime or offTime
             write 0x08 or 0x09, write new value
-        to read the current value of ON_TIMEx10ms
+        to read the current value of onTime or offTime
             write 0x08 or 0x09, read value
-        to write a new value to ON_TIMEx10ms and OFF_TIMEx10ms
-            write 0x08, write new ON_TIMEx10ms value, write new OFF_TIMEx10ms
-        to read the current value of ON_TIMEx10ms and OFF_TIMEx10ms
-            write 0x08, read ON_TIMEx10ms value, read OFF_TIMEx10ms
+        to write a new value to onTime and offTime
+            write 0x08, write new onTime value, write new offTime value
+        to read the current value of onTime and offTime
+            write 0x08, read onTime value, read offTime value
 
 ------------------------------------------------------------------------------*/
+                struct blinker_s {
+                    //registers
+                    u8 unused_[8];
+                    u8 onTime;          //[8], MS x10
+                    u8 offTime;         //[9], MS x10
+                    //cannot read/write below registers via twi
+                    const u8 myAddress; //slave address
+                    bool isFirstWr;     //is a register address write
+                    u8* regPtr;         //current register address (pointer)
+                } blinker = { {0}, 0, 0, 0x51, 0, false };
+
                 bool
-twis0Callback   (twis_irqstate_t state, u8 statusReg){
-
-                static bool isFirstWr_; //first write after start? is register address
-                static u8 registerN_;
-
+twis0Callback   (twis_irqstate_t state, u8 statusReg)
+                {
+                //keep regPtr inside the range of registers that can write/read
+                if( blinker.regPtr > &blinker.offTime ||
+                    blinker.regPtr < &blinker.unused_[0] ) blinker.regPtr = &blinker.unused_[0];
                 bool ret = true; //assume ok to continue transaction
+
                 switch( state ) {
                     //check address here, could be general call (0) or maybe we
                     //have a second address or address mask
                     case TWIS_ADDRESSED:
-                        if( twis0_lastAddress() != TWIS0_MY_ADDRESS ) ret = false; //for us?
-                        else isFirstWr_ = true;
+                        if( twis0_lastAddress() != blinker.myAddress ) ret = false; //for us?
+                        else blinker.isFirstWr = true; //yes, expect a register address write
                         break;
                     case TWIS_MREAD:
-                        {
-                        u8 v = 0; //assume invalid register, which will send 0
-                        if( registerN_ == TWIS_ON_TIMEx10ms ) v = led_onMSx10;
-                        else if( registerN_ == TWIS_OFF_TIMEx10ms ) v = led_offMSx10;
-                        twis0_write( v );
-                        registerN_++;
-                        }
+                        twis0_write( *blinker.regPtr++ );
                         break;
                     case TWIS_MWRITE:
                         {
                         u8 v = twis0_read();
                         //if first write, is a register address write
-                        if( isFirstWr_ ){
-                            isFirstWr_ = false;
-                            registerN_ = v;
+                        //regPtr will be validated in next isr
+                        if( blinker.isFirstWr ){
+                            blinker.isFirstWr = false;
+                            blinker.regPtr = &blinker.unused_[v];
                             break;
                             }
                         //else is a register write
-                        if( registerN_ == TWIS_ON_TIMEx10ms ) led_onMSx10 = v;
-                        else if( registerN_ == TWIS_OFF_TIMEx10ms ) led_offMSx10 = v;
-                        registerN_++;
+                        *blinker.regPtr++ = v;
                         }
                         break;
                     case TWIS_STOPPED:
@@ -87,6 +91,14 @@ twis0Callback   (twis_irqstate_t state, u8 statusReg){
                 return ret;
                 }
 
+/*------------------------------------------------------------------------------
+    led - PB5 (inverted) in this case
+------------------------------------------------------------------------------*/
+                typedef struct { PORT_t* port; u8 pin; bool invert; }
+pin_t;
+                static const pin_t
+led             = { &PORTB, 5, true }; //PB5, low is on
+
                 static void
 pinSet          (const pin_t p, bool on)
                 {
@@ -96,64 +108,90 @@ pinSet          (const pin_t p, bool on)
                 on ? (p.port->OUTSET = pinbm) : (p.port->OUTCLR = pinbm);
                 }
 
+
+/*------------------------------------------------------------------------------
+    delay
+------------------------------------------------------------------------------*/
                 static void
 waitMS          (u16 ms){ while( ms-- ) _delay_ms(1); }
 
+
+
+/*------------------------------------------------------------------------------
+    twi0 master communications to slave device
+    assume we have no access to the blinker struct above (which we would not
+    normally have access to), so create any needed values (enum works good)
+------------------------------------------------------------------------------*/
+                //enums for Blinker device
+                enum { BLINKER_SLAVE_ADDRESS = 0x51,            //address
+                       BLINKER_ONTIME = 8, BLINKER_OFFTIME };   //register addresses
+
+                //master to slave (blinker)
                 static bool
 blinkerWrite    (u8 reg, const u8* v, u8 vlen)
                 {
                 twim0_stdPins();
                 twim0_baud( F_CPU, 100000ul );
-                twim0_on( TWIS0_MY_ADDRESS );
+                twim0_on( BLINKER_SLAVE_ADDRESS );
                 twim0_writeWrite( &reg, 1, v, vlen ); //write register address, write value(s)
                 bool ret = twim0_waitUS( 3000 );
                 twim0_off();
                 return ret;
                 }
 
-//                static bool
-//blinkerRead     (u8 reg, u8* v)
-//                {
-//                twim0_stdPins();
-//                twim0_baud( F_CPU, 100000ul );
-//                twim0_on( twis0_my_address );
-//                twim0_writeRead( &reg, 1, v, 1 ); //write register address, read value
-//                bool ret = twim0_waitUS( 3000 );
-//                twim0_off();
-//                return ret;
-//                }
+               static bool
+blinkerRead    (u8 reg, u8* v, u8 vlen)
+               {
+               twim0_stdPins();
+               twim0_baud( F_CPU, 100000ul );
+               twim0_on( BLINKER_SLAVE_ADDRESS );
+               twim0_writeRead( &reg, 1, v, vlen ); //write register address, read value(s)
+               bool ret = twim0_waitUS( 3000 );
+               twim0_off();
+               return ret;
+               }
 
                 int
 main            ()
                 {
 
+                //setup blinker slave device
                 twis0_stdPins();
-                twis0_init( TWIS0_MY_ADDRESS, twis0Callback );
+                twis0_init( blinker.myAddress, twis0Callback );
                 sei();
 
-                static const u8 onOffTbl[] = {
-                    2, 20,  //20ms on, 200ms off
-                    100, 100 //1000ms on, 1000ms off
+                //blinker device has unused registers, will use to store
+                //a value in one of them so we can test reading the slave also
+                u8 blinkN = 5; //blink N times in loop
+                blinkerWrite( 0, &blinkN, 1 ); //blinker register 0 is unused
+
+                const u8 onOffTbl[] = {
+                    2, 20,      //20ms on, 200ms off
+                    100, 100    //1000ms on, 1000ms off
                     };
-                u8 i = 0;
+                u8 idx = 0;
 
                 while(1) {
 
-                    if( i >= sizeof(onOffTbl)/sizeof(onOffTbl[0]) ) i = 0;
+                    if( idx >= sizeof(onOffTbl)/sizeof(onOffTbl[0]) ) idx = 0;
 
-                    //write 2 values starting at ON time register
-                    if( ! blinkerWrite(TWIS_ON_TIMEx10ms, &onOffTbl[i], 2) ){
+                    //write 2 values starting at ON time register (master->slave)
+                    if( ! blinkerWrite(BLINKER_ONTIME, &onOffTbl[idx], 2) ){
                         _delay_ms( 1000 ); //failed, delay
                         continue; //and try again
                         }
-                    i += 2;
+                    idx += 2;
 
-                    //blink 5 times
-                    for( u8 n = 0; n < 5; n++ ){
+                    //get value from register 0 (should be same as blinkN initially set to)
+                    //if any error set blinkN to high value to indicate a problem
+                    if( ! blinkerRead( 0, &blinkN, 1) ) blinkN = 100;
+
+                    //blink N times (slave is doing this)
+                    for( u8 i = 0; i < blinkN; i++ ){
                         pinSet( led, 1 );
-                        waitMS( led_onMSx10 * 10 );
+                        waitMS( blinker.onTime * 10 );
                         pinSet( led, 0 );
-                        waitMS( led_offMSx10 * 10 );
+                        waitMS( blinker.offTime * 10 );
                         }
 
                     //delay between blinks
