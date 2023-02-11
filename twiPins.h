@@ -1,17 +1,6 @@
 #pragma once
 #include "MyAvr.h"
 
-                typedef struct {
-                    PORT_t* port;               // &PORTn
-                    uint8_t pinSCL;             // 0-7
-                    uint8_t pinSCA;             // 0-7
-                    volatile uint8_t* pmux;     // &PORTMUX.twi_register
-                    uint8_t pmux_clrbm;         // bitmask values to clear/set the appropriate twi bitfields in portmux to select a set of pins
-                    uint8_t pmux_setbm;         //  the clrbm (inverted) will be used to reset bitfield to default, the setbm will set the desired value
-                } 
-const 
-twi_pins_t;
-
 /*------------------------------------------------------------------------------
     twiPins.h - Twi pins
 
@@ -36,7 +25,20 @@ default SDA      PA2          PB1         PA1
     bitfields in the portmux register also can be different
     so will have to look these names up when creating a new
     pair of pins
+
+    you can also pass a struct directly without these premade structs if wanted-
+        twi_pins_init( (twi_pins_t){ &PORTA, 3, 2, &PORTMUX_TWISPIROUTEA, PORTMUX_TWI0_gm, 0 } );
 ------------------------------------------------------------------------------*/
+                typedef struct {
+                    PORT_t* port;               // &PORTn
+                    uint8_t pinSCL;             // 0-7
+                    uint8_t pinSCA;             // 0-7
+                    volatile uint8_t* pmux;     // &PORTMUX.twi_register
+                    uint8_t pmux_clrbm;         // bitmask values to clear/set the appropriate twi bitfields in portmux to select a set of pins
+                    uint8_t pmux_setbm;         //  the clrbm (inverted) will be used to reset bitfield to default, the setbm will set the desired value
+                } 
+const 
+twi_pins_t;
 
 //------------------------------
 // mega0
@@ -75,7 +77,7 @@ twi0_alt_pins   = { &PORTA, 2, 1, &PORTMUX_CTRLB, PORTMUX_TWI0_bm, PORTMUX_TWI0_
                 __attribute(( always_inline )) static inline void 
 twi_pins_init   (twi_pins_t s)  //passing by value since is inline w/static data (compiler optimizes)
                 {               //allows . member access instead of ->, and can pass s by value (name vs &name)
-                uint8_t 
+                uint8_t         //and also allows passing a struct created as an argument (see notes above)
                     scl = s.pinSCL & 7,         //extract all values for easier use/reading
                     sca = s.pinSCA & 7, 
                     clrbm = ~s.pmux_clrbm,      //inverted for bitand use
