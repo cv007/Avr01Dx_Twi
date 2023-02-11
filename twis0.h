@@ -4,6 +4,8 @@
 /*------------------------------------------------------------------------------
     twis0.h - Twi0 slave
 
+    0. uncomment the appropriate set of pins for your mcu
+        in twiPins.h
     1. select pins to use- standard or alternate
         twis0_stdPins();
     2. init with address and callback function

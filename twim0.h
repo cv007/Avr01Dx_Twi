@@ -4,6 +4,8 @@
 /*------------------------------------------------------------------------------
     twim0.h - Twi0, master - avr mega0, tiny0/1, da
 
+    0. uncomment the appropriate set of pins for your mcu
+        in twiPins.h
     1. select pins to use- default or alternate
         twim0_stdPins(); //pullups on, portmux set
     2. set baud
