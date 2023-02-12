@@ -2,7 +2,6 @@
 //   twis0.c - Twi slave     see twis0.h for info
 ///======================================================================
 #include "MyAvr.h"
-
 #include "twis0.h"
 #include "twiPins.h"
 

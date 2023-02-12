@@ -1,8 +1,7 @@
 //======================================================================
-//  twim0.c - Twi0, master - avr mega0, tiny0/1, da
+//  twim0.c - Twi0, master - avr mega0, tiny0/1, da, etc.
 //======================================================================
 #include "MyAvr.h"
-
 #include "twim0.h"
 #include "twiPins.h"
 

@@ -1,9 +1,10 @@
 #pragma once
+//======================================================================
+//  twiPins.h
+//======================================================================
 #include "MyAvr.h"
 
 /*------------------------------------------------------------------------------
-    twiPins.h - Twi pins
-
     twi0 master/slave - basic/limited table for twim0 (not dual mode)
 
                 mega0/DA    tiny0/1     tiny0/1 XX2 (8pin)
@@ -13,9 +14,9 @@ default SDA      PA2          PB1         PA1
     alt SDA      PC2          PA1         --
 
     add new mcu's to this pin info table as needed
-------------------------------------------------------------------------------*/
 
-/*------------------------------------------------------------------------------
+
+
     uncomment the set of pins that suits your mcu (instead of using a 
     series of ifdef's which get harder to manage as more mcu's are added)
 

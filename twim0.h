@@ -1,10 +1,11 @@
 #pragma once
+//======================================================================
+//  twim0.h - Twi0, master - avr mega0, tiny0/1, da, etc.
+//======================================================================
 #include "MyAvr.h"
-#include "twiPins.h"
+
 
 /*------------------------------------------------------------------------------
-    twim0.h - Twi0, master - avr mega0, tiny0/1, da
-
     1. uncomment the appropriate set of pins for your mcu
         in twiPins.h to select the twi pins to use
     2. set baud
