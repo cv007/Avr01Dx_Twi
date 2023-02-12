@@ -130,7 +130,6 @@ waitMS          (u16 ms){ while( ms-- ) _delay_ms(1); }
                 static bool
 blinkerWrite    (u8 reg, const u8* v, u8 vlen)
                 {
-                twim0_stdPins();
                 twim0_baud( F_CPU, 100000ul );
                 twim0_on( BLINKER_SLAVE_ADDRESS );
                 twim0_writeWrite( &reg, 1, v, vlen ); //write register address, write value(s)
@@ -142,7 +141,6 @@ blinkerWrite    (u8 reg, const u8* v, u8 vlen)
                 static bool
 blinkerRead     (u8 reg, u8* v, u8 vlen)
                 {
-                twim0_stdPins();
                 twim0_baud( F_CPU, 100000ul );
                 twim0_on( BLINKER_SLAVE_ADDRESS );
                 twim0_writeRead( &reg, 1, v, vlen ); //write register address, read value(s)
@@ -150,6 +148,7 @@ blinkerRead     (u8 reg, u8* v, u8 vlen)
                 twim0_off();
                 return ret;
                 }
+
 
 
 /*------------------------------------------------------------------------------
@@ -160,8 +159,7 @@ main            ()
                 {
 
                 //setup blinker slave device
-                twis0_stdPins();
-                twis0_init( blinker.myAddress, twis0Callback );
+                twis0_on( blinker.myAddress, twis0Callback );
                 sei();
 
                 //blinker device has unused registers, will use to store
@@ -182,8 +180,15 @@ main            ()
 
                     //write 2 values starting at ONTIME register (master->slave)
                     if( ! blinkerWrite(BLINKER_ONTIME, &onOffTbl[idx], 2) ){
-                        _delay_ms( 1000 );  //failed, so delay
-                        continue;           //and try again
+                        //special case for bus recovery since we are using the same pins
+                        //for master/slave in this example (not normal), so we have to get
+                        //the slave to release the pins also
+                        twis0_off();       
+                        twim0_busRecovery();    //failed, so do recovery
+                        _delay_ms( 1000 );      //delay
+                        //and turn the slave back on 
+                        twis0_on( blinker.myAddress, twis0Callback );
+                        continue;               //start over at while(1), try again
                         }
                     //next pair
                     idx += 2;

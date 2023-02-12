@@ -83,14 +83,38 @@ ISR             (TWI0_TWIS_vect)
                 done ? nackComplete() : ack();
                 }
 
+                static void 
+initPins        ()
+                { 
+                uint8_t
+                    scl = twi0_pins.SpinSCL & 7,        //extract all values for easier use/reading
+                    sca = twi0_pins.SpinSCA & 7, 
+                    clrbm = ~twi0_pins.pmux_clrbm,      //inverted for bitand use
+                    setbm = twi0_pins.pmux_setbm;
+                volatile uint8_t *pinctrl = &twi0_pins.Sport->PIN0CTRL;
+                volatile uint8_t *pmux = twi0_pins.pmux;
+
+                //enable pullups and set portmux as needed (some have no alt pins, so no twi portmux)
+                pinctrl[scl] |= PORT_PULLUPEN_bm;
+                pinctrl[sca] |= PORT_PULLUPEN_bm;
+                if( pmux ) *pmux = (*pmux & clrbm) | setbm; //compiler will optimize if bitfield is a single bit
+                }
+
 //============
 // public:
 //============
 
                 void    
-twis0_stdPins   () { twi_pins_init( twi0_std_pins ); }
-                void    
-twis0_altPins   () { twi_pins_init( twi0_alt_pins ); }
+twis0_on        (u8 addr, twis_callback_t cb)
+                {
+                if( ! cb ) return;                  //do not accept callback set to 0
+                twis0_off();                        //also clears flags
+                initPins();                         //init pins
+                isrFuncCallback_ = cb;
+                address1( addr );
+                irqAllOn();
+                on();
+                }
                 void    
 twis0_off       () { irqAllOff(); off(); clearFlags(); }
                 void    
@@ -104,13 +128,3 @@ twis0_address2  (u8 v) { address2(v, true); }       //2nd address
                 void    
 twis0_addressMask(u8 v) { address2(v, false); }     //address mask (no 2nd address)
 
-                void    
-twis0_init      (u8 addr, twis_callback_t cb)
-                {
-                if( ! cb ) return;                  //do not accept callback set to 0
-                twis0_off();                        //also clears flags
-                isrFuncCallback_ = cb;
-                address1( addr );
-                irqAllOn();
-                on();
-                }

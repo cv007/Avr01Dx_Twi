@@ -4,7 +4,7 @@
 /*------------------------------------------------------------------------------
     twiPins.h - Twi pins
 
-    twi0 master/slave - (not dual mode)
+    twi0 master/slave - basic/limited table for twim0 (not dual mode)
 
                 mega0/DA    tiny0/1     tiny0/1 XX2 (8pin)
 default SCL      PA3          PB0         PA2
@@ -16,80 +16,64 @@ default SDA      PA2          PB1         PA1
 ------------------------------------------------------------------------------*/
 
 /*------------------------------------------------------------------------------
-    uncomment the pair of pins that suits your mcu (instead of using a series
-    of ifdef's which get harder to manage as more mcu's are added)
+    uncomment the set of pins that suits your mcu (instead of using a 
+    series of ifdef's which get harder to manage as more mcu's are added)
 
-    add new pairs as needed (can also add twi1_ pins if needed)
+    add more as needed (can also add twi1_ pins if needed)
 
     portmux register names are not all the same, and the twi 
     bitfields in the portmux register also can be different
     so will have to look these names up when creating a new
     pair of pins
 
-    you can also pass a struct directly without these premade structs if wanted-
-        twi_pins_init( (twi_pins_t){ &PORTA, 3, 2, &PORTMUX_TWISPIROUTEA, PORTMUX_TWI0_gm, 0 } );
+    master/slave pins are the same for many mcu's, but is split so one can
+    use dual mode for those mcu's which are able to use a different set of 
+    pins for master/slave
 ------------------------------------------------------------------------------*/
                 typedef struct {
-                    PORT_t* port;               // &PORTn
-                    uint8_t pinSCL;             // 0-7
-                    uint8_t pinSCA;             // 0-7
+                    PORT_t* Mport;              // master port- &PORTn
+                    uint8_t MpinSCL;            // 0-7
+                    uint8_t MpinSCA;            // 0-7
+                    PORT_t* Sport;              // slave port- &PORTn
+                    uint8_t SpinSCL;            // 0-7
+                    uint8_t SpinSCA;            // 0-7
                     volatile uint8_t* pmux;     // &PORTMUX.twi_register
                     uint8_t pmux_clrbm;         // bitmask values to clear/set the appropriate twi bitfields in portmux to select a set of pins
                     uint8_t pmux_setbm;         //  the clrbm (inverted) will be used to reset bitfield to default, the setbm will set the desired value
                 } 
 const 
-twi_pins_t;
+twiPins_t;
 
 //------------------------------
 // mega0
 //------------------------------
-//                 static twi_pins_t 
-// twi0_std_pins   = { &PORTA, 3, 2, &PORTMUX_TWISPIROUTEA, PORTMUX_TWI0_gm, 0 };
-//                 static twi_pins_t 
-// twi0_alt_pins   = { &PORTC, 3, 2, &PORTMUX_TWISPIROUTEA, PORTMUX_TWI0_gm, PORTMUX_TWI0_ALT2_gc };
+//                 static twiPins_t //std
+// twi0_pins       = { &PORTA, 3, 2, &PORTA, 3, 2, &PORTMUX_TWISPIROUTEA, PORTMUX_TWI0_gm, 0 };
+//                 static twiPins_t //alt
+// twi0_pins       = { &PORTC, 3, 2,  &PORTC, 3, 2, &PORTMUX_TWISPIROUTEA, PORTMUX_TWI0_gm, PORTMUX_TWI0_ALT2_gc };
 
 //------------------------------
 // avrda
 //------------------------------
-//                 static twi_pins_t 
-// twi0_std_pins   = { &PORTA, 3, 2, &PORTMUX_TWIROUTEA, PORTMUX_TWI0_gm, 0 };
-//                     static twi_pins_t 
-// twi0_alt_pins   = { &PORTC, 3, 2, &PORTMUX_TWIROUTEA, PORTMUX_TWI0_gm, PORTMUX_TWI0_ALT2_gc };
+//                 static twiPins_t //std
+// twi0_pins       = { &PORTA, 3, 2, &PORTA, 3, 2, &PORTMUX_TWIROUTEA, PORTMUX_TWI0_gm, 0 };
+//                 static twiPins_t //alt
+// twi0_pins       = { &PORTC, 3, 2, &PORTC, 3, 2, &PORTMUX_TWIROUTEA, PORTMUX_TWI0_gm, PORTMUX_TWI0_ALT2_gc };
 
 //------------------------------
 // tiny0/1 w/alternate pins
 //------------------------------
-                static twi_pins_t 
-twi0_std_pins   = { &PORTB, 0, 1, &PORTMUX_CTRLB, PORTMUX_TWI0_bm, 0 };
-                static twi_pins_t 
-twi0_alt_pins   = { &PORTA, 2, 1, &PORTMUX_CTRLB, PORTMUX_TWI0_bm, PORTMUX_TWI0_bm };
+                static twiPins_t //std
+twi0_pins       = { &PORTB, 0, 1, &PORTB, 0, 1, &PORTMUX_CTRLB, PORTMUX_TWI0_bm, 0 };
+//                 static twiPins_t //alt
+// twi0_pins       = { &PORTA, 2, 1, &PORTA, 2, 1, &PORTMUX_CTRLB, PORTMUX_TWI0_bm, PORTMUX_TWI0_bm };
 
 //------------------------------
 // tiny0/1 no alternate pins
 //------------------------------
-//                 static twi_pins_t 
-// twi0_std_pins   = { &PORTB, 0, 1, 0, 0, 0 }; //pmux = 0 (portmux not used)
-//                 static twi_pins_t 
-// twi0_alt_pins   = { &PORTB, 0, 1, 0, 0, 0 }; //use default pins
+//                 static twiPins_t //std only
+// twi0_std_pins   = { &PORTB, 0, 1, &PORTB, 0, 1, 0, 0, 0 }; //pmux = 0 (no twi portmux)
 
-
-
-                __attribute(( always_inline )) static inline void 
-twi_pins_init   (twi_pins_t s)  //passing by value since is inline w/static data (compiler optimizes)
-                {               //allows . member access instead of ->, and can pass s by value (name vs &name)
-                uint8_t         //and also allows passing a struct created as an argument (see notes above)
-                    scl = s.pinSCL & 7,         //extract all values for easier use/reading
-                    sca = s.pinSCA & 7, 
-                    clrbm = ~s.pmux_clrbm,      //inverted for bitand use
-                    setbm = s.pmux_setbm;
-                volatile uint8_t 
-                    *pinctrl = &s.port->PIN0CTRL, 
-                    *pmux = s.pmux;
-                //enable pullups and set portmux as needed (some have no alt pins, so no twi portmux)
-                pinctrl[scl] = PORT_PULLUPEN_bm; //assignment, will set all other bits to 0
-                pinctrl[sca] = PORT_PULLUPEN_bm; // if need invert or isc bits for some reason, change to |=
-                if( pmux ) *pmux = (*pmux & clrbm) | setbm; //compiler will optimize if bitfield is a single bit
-                }
 
 
 

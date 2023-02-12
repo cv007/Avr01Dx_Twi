@@ -1,13 +1,12 @@
 #pragma once
 #include "MyAvr.h"
+#include "twiPins.h"
 
 /*------------------------------------------------------------------------------
     twim0.h - Twi0, master - avr mega0, tiny0/1, da
 
-    0. uncomment the appropriate set of pins for your mcu
-        in twiPins.h
-    1. select pins to use- default or alternate
-        twim0_stdPins(); //pullups on, portmux set
+    1. uncomment the appropriate set of pins for your mcu
+        in twiPins.h to select the twi pins to use
     2. set baud
         twim0_baud( F_CPU, 100000ul ); //100kHz
     3. turn on, specifying slave address
@@ -27,7 +26,6 @@
 
     if not using a callback function, you can poll for completion-
 
-        twim0_defaultPins();                //init two
         twim0_baud( F_CPU, 100000ul );
         twim0_on( 0x44 );
         sei();
@@ -53,8 +51,8 @@
 
 typedef void (*twim_callbackT)(void);
 
-void twim0_off          ();
 void twim0_on           (u8 address);
+void twim0_off          ();
 bool twim0_isBusy       ();
 bool twim0_resultOK     ();
 void twim0_callback     (twim_callbackT callbackFunction);
@@ -63,12 +61,12 @@ void twim0_writeWrite   (const u8* writeBuffer, u16 writeLength, const u8* write
 void twim0_write        (const u8* writeBuffer, u16 writeLength);
 void twim0_read         (u8* readBuffer, u16 readLength);
 bool twim0_waitUS       (u16 microseconds);
-void twim0_stdPins      ();
-void twim0_altPins      ();
+void twim0_busRecovery  ();
 
-                        static inline __attribute((always_inline))
+                        __attribute((always_inline)) static inline 
 void twim0_baud         (uint32_t cpuHz, uint32_t twiHz)
                         {
                         int32_t v = cpuHz/twiHz/2 - 5;
                         TWI0.MBAUD = v >= 0 ? v : 0;
                         }
+
