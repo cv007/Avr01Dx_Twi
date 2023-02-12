@@ -95,12 +95,13 @@ twis0Callback   (twis_irqstate_t state, u8 statusReg)
     led - PB5 (inverted) in this case
 ------------------------------------------------------------------------------*/
                 typedef struct { PORT_t* port; u8 pin; bool invert; }
+const
 pin_t;
-                static const pin_t
-led             = { &PORTB, 5, true }; //PB5, low is on
+                static pin_t            //set as needed for your board
+led             = { &PORTB, 5, true };  //PB5, low is on
 
                 static void
-pinSet          (const pin_t p, bool on)
+pinSet          (pin_t p, bool on)
                 {
                 u8 pinbm = 1<<(p.pin & 7);
                 p.port->DIRSET = pinbm;
@@ -110,7 +111,8 @@ pinSet          (const pin_t p, bool on)
 
 
 /*------------------------------------------------------------------------------
-    delay
+    wait - uses _delay_ms (so we can have a simple callable delay with
+           variable runtime values)
 ------------------------------------------------------------------------------*/
                 static void
 waitMS          (u16 ms){ while( ms-- ) _delay_ms(1); }
@@ -162,10 +164,10 @@ main            ()
                 twis0_on( blinker.myAddress, twis0Callback );
                 sei();
 
-                //blinker device has unused registers, will use to store
-                //a value in one of them so we can test reading the slave also
-                u8 blinkN = 5; //blink N times in loop
-                blinkerWrite( 0, &blinkN, 1 ); //blinker register 0 is unused
+                //blinker device has unused registers, will use register 0
+                //to store a value so we can test reading the slave also
+                u8 blinkN = 5; //blink N times in loop below
+                blinkerWrite( 0, &blinkN, 1 ); //write 1 byte, 5-> register 0
 
                 const u8 onOffTbl[] = {
                     2, 20,      //20ms on, 200ms off
@@ -183,10 +185,10 @@ main            ()
                         //special case for bus recovery since we are using the same pins
                         //for master/slave in this example (not normal), so we have to get
                         //the slave to release the pins also
-                        twis0_off();       
-                        twim0_busRecovery();    //failed, so do recovery
+                        twis0_off();
+                        twim0_busRecovery();    //failed (don't care why), so do recovery
                         _delay_ms( 1000 );      //delay
-                        //and turn the slave back on 
+                        //and turn the slave back on
                         twis0_on( blinker.myAddress, twis0Callback );
                         continue;               //start over at while(1), try again
                         }
@@ -194,8 +196,13 @@ main            ()
                     idx += 2;
 
                     //get value from register 0 (should be same as blinkN initial value above)
-                    //if any error set blinkN to high value to indicate a problem
-                    if( ! blinkerRead( 0, &blinkN, 1) ) blinkN = 100;
+                    //if any error, turn on led for 10 seconds
+                    if( ! blinkerRead( 0, &blinkN, 1) ){
+                        pinSet( led, 1 );
+                        waitMS( 10000 );
+                        pinSet( led, 0 );
+                        continue; //start over
+                    }
 
                     //blink N times (slave Blinker is doing this)
                     for( u8 i = 0; i < blinkN; i++ ){
