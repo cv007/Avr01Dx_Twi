@@ -28,11 +28,14 @@
             twis0_read() - when in TWIS_MWRITE, you can read what was sent
     }
 
-    NOTE- gencall is enabled by default, so check the address in the callback
+    NOTE: gencall is enabled by default, so check the address in the callback
           when in TWIS_ADDRESSED state (simply enabled to eliminate one more
           option to set- most likely never seen but if so you can ignore in the
           callback by only returning true when dealing with an address you
           want to respond to)
+
+          FM+ mode is always used but if do not want it you can modify
+          the initPins() and on() functions
 ------------------------------------------------------------------------------*/
 
 

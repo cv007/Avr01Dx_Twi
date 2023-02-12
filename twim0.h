@@ -34,19 +34,17 @@
         u8 rbuf[4];                         //no need to clear/init read buffer
         twim0_writeRead( wbuf, 1, rbuf, 4 );//write 1 byte (0x55), read 4 bytes
 
-        //blocking until done
-        while( twim0_isBusy() ){}           //blocks until done (not a great idea)
-        if( twim0_resultOK() ){}            //rbuf has 4 bytes
-        else {}                             //was nack'd or bus error/collision
-
         //blocking until done or a timeout (us)
         if( twim0_waitUS(3000) ){}          //result ok, rbuf has 4 bytes
-        else if( twim0_isBusy() ){}         //was timeout, (twim irqs may still be on)
+        else if( twim0_isBusy() ){          //was timeout, (twim irqs may still be on)
+            twim0_busRecovery();            //can do bus recovery if wanted
+            }
         else {}                             //was nack'd or bus error/collision (twim irqs are off)
 
         twim0_off();
 
-
+        NOTE: FM+ mode is always used but if do not want it you can modify
+              the twim0_on() function
 ------------------------------------------------------------------------------*/
 
 typedef void (*twim_callbackT)(void);

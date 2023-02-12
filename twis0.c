@@ -20,7 +20,12 @@ address2        (u8 v, bool nomask) { TWI0.SADDRMASK = (v<<1)|nomask; }
                 static void 
 off             () { TWI0.SCTRLA &= ~1; }
                 static void 
-on              () { TWI0.SCTRLA |= 1; }
+on              () 
+                { //if master/slave pins are the same, not in dual mode so set FMPEN in CTRLA
+                  //if not the same, initPins already took care of FMPEN in the DUALCTRL register
+                if( twi0_pins.MpinSCL == twi0_pins.SpinSCL ) TWI0.CTRLA |= 2;
+                TWI0.SCTRLA |= 1; 
+                }
                 static u8   
 read            () { return TWI0.SDATA; }
                 static void 
@@ -98,6 +103,12 @@ initPins        ()
                 pinctrl[scl] |= PORT_PULLUPEN_bm;
                 pinctrl[sca] |= PORT_PULLUPEN_bm;
                 if( pmux ) *pmux = (*pmux & clrbm) | setbm; //compiler will optimize if bitfield is a single bit
+
+                //turn on dual mode if master/slave pins are not the same
+                //will assume the user has setup twi0_pins properly, so wants to use dual mode
+                //not all mcu's have dual mode, so using offset from CTRLA to access DUALCTRL so
+                //can compile for all mcu's
+                if( twi0_pins.MpinSCL != twi0_pins.SpinSCL ) (&TWI0.CTRLA)[1] |= 1; //dual enable
                 }
 
 //============

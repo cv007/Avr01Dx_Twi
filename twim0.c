@@ -34,7 +34,7 @@
                 enum { ENABLE = 1 }; //on/off
 
                 static void
-on              () { TWI0.MCTRLA |= ENABLE; }
+on              () { TWI0.CTRLA |= 2; TWI0.MCTRLA |= ENABLE; } //FM+ enable in ctrla
                 static void
 off             () { TWI0.MCTRLA = 0; }
                 static void
