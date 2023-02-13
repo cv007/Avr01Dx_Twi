@@ -8,6 +8,39 @@
 #include "twis0.h"
 #include "twim0.h"
 
+
+/*------------------------------------------------------------------------------
+    wait - uses _delay_ms (so we can have a simple callable delay with
+           variable runtime values)
+------------------------------------------------------------------------------*/
+                static void
+waitMS          (u16 ms){ while( ms-- ) _delay_ms(1); }
+
+
+/*------------------------------------------------------------------------------
+    led - PB5 (inverted) in this case
+------------------------------------------------------------------------------*/
+                typedef struct { PORT_t* port; u8 pin; bool invert; }
+const
+pin_t;
+                static pin_t            //set as needed for your board
+led             = { &PORTB, 5, true };  //PB5, low is on
+
+                static void
+pinSet          (pin_t p, bool on)
+                {
+                u8 pinbm = 1<<(p.pin & 7);
+                p.port->DIRSET = pinbm;
+                if( p.invert ) (&p.port->PIN0CTRL)[p.pin] |= 0x80;
+                on ? (p.port->OUTSET = pinbm) : (p.port->OUTCLR = pinbm);
+                }
+
+                static void
+ledOnMS         (u16 ms){ pinSet( led, 1 ); waitMS( ms ); }
+                static void
+ledOffMS        (u16 ms){ pinSet( led, 0 ); waitMS( ms );  }
+
+
 /*------------------------------------------------------------------------------
     Blinker I2C device - example i2c device on this mcu
 
@@ -52,7 +85,7 @@
 blinker         = { {0}, 0, 0, 0x51, false, 0 };
 
                 bool
-twis0Callback   (twis_irqstate_t state, u8 statusReg)
+blinkerCallbackS(twis_irqstate_t state, u8 statusReg)
                 {
                 //keep regPtr inside the range of registers that can write/read
                 if( blinker.regPtr > &blinker.offTime ||
@@ -73,7 +106,7 @@ twis0Callback   (twis_irqstate_t state, u8 statusReg)
                     break;
 
                     case TWIS_MWRITE: { //parens so we can create a var inside case without error
-                        u8 v = twis0_read();                                                
+                        u8 v = twis0_read();
                         if( blinker.isFirstWr ){ //if first write, is a register address write
                             blinker.isFirstWr = false;
                             blinker.regPtr = &blinker.ram[v]; //ram is base address 0, so v is offset from that
@@ -93,41 +126,14 @@ twis0Callback   (twis_irqstate_t state, u8 statusReg)
                 return ret;
                 }
 
-
-/*------------------------------------------------------------------------------
-    wait - uses _delay_ms (so we can have a simple callable delay with
-           variable runtime values)
-------------------------------------------------------------------------------*/
                 static void
-waitMS          (u16 ms){ while( ms-- ) _delay_ms(1); }
-
-/*------------------------------------------------------------------------------
-    led - PB5 (inverted) in this case
-------------------------------------------------------------------------------*/
-                typedef struct { PORT_t* port; u8 pin; bool invert; }
-const
-pin_t;
-                static pin_t            //set as needed for your board
-led             = { &PORTB, 5, true };  //PB5, low is on
-
-                static void
-pinSet          (pin_t p, bool on)
+blinkerRunS     (u8 n)
                 {
-                u8 pinbm = 1<<(p.pin & 7);
-                p.port->DIRSET = pinbm;
-                if( p.invert ) (&p.port->PIN0CTRL)[p.pin] |= 0x80;
-                on ? (p.port->OUTSET = pinbm) : (p.port->OUTCLR = pinbm);
+                for( u8 i = 0; i < n; i++ ){
+                    ledOnMS( blinker.onTime * 10 );
+                    ledOffMS( blinker.offTime * 10 );
+                    }
                 }
-
-                static void
-ledOnMS         (u16 ms){ pinSet( led, 1 ); waitMS( ms ); }
-                static void
-ledOffMS        (u16 ms){ pinSet( led, 0 ); waitMS( ms );  }
-
-
-
-
-
 /*------------------------------------------------------------------------------
     twi0 master communications to slave device
     assume we have no access to the blinker struct above (which we would not
@@ -141,7 +147,7 @@ ledOffMS        (u16 ms){ pinSet( led, 0 ); waitMS( ms );  }
 
                 //master to slave (blinker)
                 static bool
-blinkerWrite    (u8 reg, const u8* v, u8 vlen)
+blinkerWriteM   (u8 reg, const u8* v, u8 vlen)
                 {
                 twim0_baud( F_CPU, 100000ul );
                 twim0_on( BLINKER_SLAVE_ADDRESS );
@@ -152,7 +158,7 @@ blinkerWrite    (u8 reg, const u8* v, u8 vlen)
                 }
 
                 static bool
-blinkerRead     (u8 reg, u8* v, u8 vlen)
+blinkerReadM    (u8 reg, u8* v, u8 vlen)
                 {
                 twim0_baud( F_CPU, 100000ul );
                 twim0_on( BLINKER_SLAVE_ADDRESS );
@@ -163,7 +169,7 @@ blinkerRead     (u8 reg, u8* v, u8 vlen)
                 }
 
                 static void
-blinkerReset    ()
+blinkerResetM   ()
                 {
                 //special case for bus recovery since we are using the same pins
                 //for master/slave in this example, so we have to get the slave
@@ -171,7 +177,7 @@ blinkerReset    ()
                 //port peripheral
                 twis0_off();
                 twim0_busRecovery();
-                twis0_on( blinker.myAddress, twis0Callback ); //turn the slave back on
+                twis0_on( blinker.myAddress, blinkerCallbackS ); //turn the slave back on
                 //turn led on for 10 sec to indicate error
                 ledOnMS( 10000 );
                 ledOffMS( 0 );
@@ -185,15 +191,15 @@ main            ()
                 {
 
                 //setup blinker slave device
-                twis0_on( blinker.myAddress, twis0Callback );
+                twis0_on( blinker.myAddress, blinkerCallbackS );
                 sei();
 
                 //blinker device has ram registers, will use ram[0]
                 //to store a value so we can test reading the slave also
                 //if fails, keep trying
                 u8 blinkN = 5; //blink N times in loop below
-                while( ! blinkerWrite(BLINKER_RAM, &blinkN, 1) ){ //write 1 byte, 5 -> ram[0]
-                    blinkerReset();
+                while( ! blinkerWriteM(BLINKER_RAM, &blinkN, 1) ){ //write 1 byte, 5 -> ram[0]
+                    blinkerResetM();
                     }
 
                 //table of led on/off value pairs
@@ -209,8 +215,8 @@ main            ()
                     //keep idx inside table
                     if( idx >= tblSize ) idx = 0;
                     //write 2 values starting at ONTIME register (master->slave)
-                    if( ! blinkerWrite(BLINKER_ONTIME, &onOffTbl[idx], 2) ){
-                        blinkerReset();
+                    if( ! blinkerWriteM(BLINKER_ONTIME, &onOffTbl[idx], 2) ){
+                        blinkerResetM();
                         continue;
                         }
                     //next pair
@@ -218,16 +224,13 @@ main            ()
 
                     //get value from register ram[0] (should be same as blinkN initial value above)
                     //if any error, do bus recovery and turn on led for 10 seconds
-                    if( ! blinkerRead( BLINKER_RAM, &blinkN, 1) ){
-                        blinkerReset();
+                    if( ! blinkerReadM( BLINKER_RAM, &blinkN, 1) ){
+                        blinkerResetM();
                         continue; //start over
                         }
 
                     //blink N times (slave Blinker is doing this)
-                    for( u8 i = 0; i < blinkN; i++ ){
-                        ledOnMS( blinker.onTime * 10 );
-                        ledOffMS( blinker.offTime * 10 );
-                        }
+                    blinkerRunS( blinkN );
 
                     } //while
 
