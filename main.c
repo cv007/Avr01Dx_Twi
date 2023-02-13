@@ -134,6 +134,8 @@ blinkerRunS     (u8 n)
                     ledOffMS( blinkerS.offTime * 10 );
                     }
                 }
+
+
 /*------------------------------------------------------------------------------
     twi0 master communications to slave device
     assume we have no access to the blinker struct above (which we would not
@@ -182,6 +184,7 @@ blinkerResetM   ()
                 ledOnMS( 10000 );
                 ledOffMS( 0 );
                 }
+
 
 /*------------------------------------------------------------------------------
     main
