@@ -44,7 +44,7 @@ ledOffMS        (u16 ms){ pinSet( led, 0 ); waitMS( ms );  }
 /*------------------------------------------------------------------------------
     Blinker I2C device - example i2c device on this mcu
 
-        slave address 0x51
+        twi0 slave address 0x51
 
         our slave device has registers from address 0x00 to 0x07 named ram,
             which can be used to store byte values
@@ -82,14 +82,14 @@ ledOffMS        (u16 ms){ pinSet( led, 0 ); waitMS( ms );  }
                     bool isFirstWr;     //is a register address write
                     u8* regPtr;         //current register address (pointer)
                 }
-blinker         = { {0}, 0, 0, 0x51, false, 0 };
+blinkerS        = { {0}, 0, 0, 0x51, false, 0 };
 
                 bool
 blinkerCallbackS(twis_irqstate_t state, u8 statusReg)
                 {
                 //keep regPtr inside the range of registers that can write/read
-                if( blinker.regPtr > &blinker.offTime ||
-                    blinker.regPtr < &blinker.ram[0] ) blinker.regPtr = &blinker.ram[0];
+                if( blinkerS.regPtr > &blinkerS.offTime ||
+                    blinkerS.regPtr < &blinkerS.ram[0] ) blinkerS.regPtr = &blinkerS.ram[0];
 
                 bool ret = true; //assume ok to continue transaction
 
@@ -97,23 +97,23 @@ blinkerCallbackS(twis_irqstate_t state, u8 statusReg)
                     //check address here, could be general call (0) or maybe we
                     //have a second address or address mask
                     case TWIS_ADDRESSED:
-                    if( twis0_lastAddress() != blinker.myAddress ) ret = false; //for us?
-                    else blinker.isFirstWr = true; //yes, expect a register address write
+                    if( twis0_lastAddress() != blinkerS.myAddress ) ret = false; //for us?
+                    else blinkerS.isFirstWr = true; //yes, expect a register address write
                     break;
 
                     case TWIS_MREAD: //master read, so slave writes
-                    twis0_write( *blinker.regPtr++ );
+                    twis0_write( *blinkerS.regPtr++ );
                     break;
 
                     case TWIS_MWRITE: { //parens so we can create a var inside case without error
                         u8 v = twis0_read();
-                        if( blinker.isFirstWr ){ //if first write, is a register address write
-                            blinker.isFirstWr = false;
-                            blinker.regPtr = &blinker.ram[v]; //ram is base address 0, so v is offset from that
+                        if( blinkerS.isFirstWr ){ //if first write, is a register address write
+                            blinkerS.isFirstWr = false;
+                            blinkerS.regPtr = &blinkerS.ram[v]; //ram is base address 0, so v is offset from that
                             break;                            //regPtr will be validated in the next isr
                             }
                         //else is a register write
-                        *blinker.regPtr++ = v;
+                        *blinkerS.regPtr++ = v;
                         }
                     break;
 
@@ -130,8 +130,8 @@ blinkerCallbackS(twis_irqstate_t state, u8 statusReg)
 blinkerRunS     (u8 n)
                 {
                 for( u8 i = 0; i < n; i++ ){
-                    ledOnMS( blinker.onTime * 10 );
-                    ledOffMS( blinker.offTime * 10 );
+                    ledOnMS( blinkerS.onTime * 10 );
+                    ledOffMS( blinkerS.offTime * 10 );
                     }
                 }
 /*------------------------------------------------------------------------------
@@ -177,7 +177,7 @@ blinkerResetM   ()
                 //port peripheral
                 twis0_off();
                 twim0_busRecovery();
-                twis0_on( blinker.myAddress, blinkerCallbackS ); //turn the slave back on
+                twis0_on( blinkerS.myAddress, blinkerCallbackS ); //turn the slave back on
                 //turn led on for 10 sec to indicate error
                 ledOnMS( 10000 );
                 ledOffMS( 0 );
@@ -191,7 +191,7 @@ main            ()
                 {
 
                 //setup blinker slave device
-                twis0_on( blinker.myAddress, blinkerCallbackS );
+                twis0_on( blinkerS.myAddress, blinkerCallbackS );
                 sei();
 
                 //blinker device has ram registers, will use ram[0]
