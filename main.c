@@ -68,18 +68,16 @@ twis0Callback   (twis_irqstate_t state, u8 statusReg)
                     else blinker.isFirstWr = true; //yes, expect a register address write
                     break;
 
-                    case TWIS_MREAD:
+                    case TWIS_MREAD: //master read, so slave writes
                     twis0_write( *blinker.regPtr++ );
                     break;
 
                     case TWIS_MWRITE: { //parens so we can create a var inside case without error
-                        u8 v = twis0_read();
-                        //if first write, is a register address write
-                        //regPtr will be validated in next isr
-                        if( blinker.isFirstWr ){
+                        u8 v = twis0_read();                                                
+                        if( blinker.isFirstWr ){ //if first write, is a register address write
                             blinker.isFirstWr = false;
                             blinker.regPtr = &blinker.ram[v]; //ram is base address 0, so v is offset from that
-                            break;
+                            break;                            //regPtr will be validated in the next isr
                             }
                         //else is a register write
                         *blinker.regPtr++ = v;
