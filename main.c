@@ -95,6 +95,14 @@ twis0Callback   (twis_irqstate_t state, u8 statusReg)
                 return ret;
                 }
 
+
+/*------------------------------------------------------------------------------
+    wait - uses _delay_ms (so we can have a simple callable delay with
+           variable runtime values)
+------------------------------------------------------------------------------*/
+                static void
+waitMS          (u16 ms){ while( ms-- ) _delay_ms(1); }
+
 /*------------------------------------------------------------------------------
     led - PB5 (inverted) in this case
 ------------------------------------------------------------------------------*/
@@ -114,16 +122,11 @@ pinSet          (pin_t p, bool on)
                 }
 
                 static void
-ledOn           (){ pinSet( led, 1 ); }
+ledOnMS         (u16 ms){ pinSet( led, 1 ); waitMS( ms ); }
                 static void
-ledOff          (){ pinSet( led, 0 ); }
+ledOffMS        (u16 ms){ pinSet( led, 0 ); waitMS( ms );  }
 
-/*------------------------------------------------------------------------------
-    wait - uses _delay_ms (so we can have a simple callable delay with
-           variable runtime values)
-------------------------------------------------------------------------------*/
-                static void
-waitMS          (u16 ms){ while( ms-- ) _delay_ms(1); }
+
 
 
 
@@ -172,9 +175,8 @@ blinkerReset    ()
                 twim0_busRecovery();
                 twis0_on( blinker.myAddress, twis0Callback ); //turn the slave back on
                 //turn led on for 10 sec to indicate error
-                ledOn();
-                waitMS( 10000 );
-                ledOff();
+                ledOnMS( 10000 );
+                ledOffMS( 0 );
                 }
 
 /*------------------------------------------------------------------------------
@@ -225,13 +227,11 @@ main            ()
 
                     //blink N times (slave Blinker is doing this)
                     for( u8 i = 0; i < blinkN; i++ ){
-                        ledOn();
-                        waitMS( blinker.onTime * 10 );
-                        ledOff();
-                        waitMS( blinker.offTime * 10 );
+                        ledOnMS( blinker.onTime * 10 );
+                        ledOffMS( blinker.offTime * 10 );
                         }
 
-                    }
+                    } //while
 
                 } //main
 
