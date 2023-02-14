@@ -118,15 +118,15 @@ initPins        ()
 twis0_on        (u8 addr, twis_callback_t cb)
                 {
                 if( ! cb ) return;                  //do not accept callback set to 0
-                twis0_off();                        //also clears flags
-                initPins();                         //init pins
+                twis0_off();
+                initPins();
                 isrFuncCallback_ = cb;
                 address1( addr );
                 irqAllOn();
                 on();
                 }
                 void    
-twis0_off       () { irqAllOff(); off(); clearFlags(); }
+twis0_off       () { irqAllOff(); off(); }
                 void    
 twis0_write     (u8 v) { write(v); }
                 u8      
