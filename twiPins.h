@@ -32,15 +32,15 @@ default SDA      PA2          PB1         PA1
     pins for master/slave
 ------------------------------------------------------------------------------*/
                 typedef struct {
-                    PORT_t* Mport;              // master port- &PORTn
-                    uint8_t MpinSCL;            // 0-7
-                    uint8_t MpinSCA;            // 0-7
-                    PORT_t* Sport;              // slave port- &PORTn
-                    uint8_t SpinSCL;            // 0-7
-                    uint8_t SpinSCA;            // 0-7
-                    volatile uint8_t* pmux;     // &PORTMUX.twi_register
-                    uint8_t pmux_clrbm;         // bitmask values to clear/set the appropriate twi bitfields in portmux to select a set of pins
-                    uint8_t pmux_setbm;         //  the clrbm (inverted) will be used to reset bitfield to default, the setbm will set the desired value
+                    PORT_t* Mport;         // master port- &PORTn
+                    u8 MpinSCL;            // 0-7
+                    u8 MpinSCA;            // 0-7
+                    PORT_t* Sport;         // slave port- &PORTn
+                    u8 SpinSCL;            // 0-7
+                    u8 SpinSCA;            // 0-7
+                    volatile u8* pmux;     // &PORTMUX.twi_register
+                    u8 pmux_clrbm;         // bitmask values to clear/set the appropriate twi bitfields in portmux to select a set of pins
+                    u8 pmux_setbm;         //  the clrbm (inverted) will be used to reset bitfield to default, the setbm will set the desired value
                 } 
 const 
 twiPins_t;
