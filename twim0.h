@@ -63,9 +63,9 @@ bool twim0_waitUS       (u16 microseconds);
 void twim0_busRecovery  ();
 
                         __attribute((always_inline)) static inline 
-void twim0_baud         (uint32_t cpuHz, uint32_t twiHz)
+void twim0_baud         (u32 cpuHz, u32 twiHz)
                         {
-                        int32_t v = cpuHz/twiHz/2 - 5;
+                        i32 v = cpuHz/twiHz/2 - 5;
                         TWI0.MBAUD = v >= 0 ? v : 0;
                         }
 
