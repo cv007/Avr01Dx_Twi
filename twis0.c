@@ -1,9 +1,10 @@
-//======================================================================
-//   twis0.c - Twi slave     see twis0.h for info
-///======================================================================
-#include "MyAvr.h"
-#include "twis0.h"
-#include "twiPins.h"
+                //======================================================================
+                //   twis0.c - Twi slave     see twis0.h for info
+                //======================================================================
+
+                #include "MyAvr.h"
+                #include "twis0.h"
+                #include "twiPins.h"
 
 //============
 //  private:
@@ -12,34 +13,33 @@
                 static volatile u8      lastAddress_; //last address we responded as
                 static twis_callback_t  isrFuncCallback_;
 
-                static void 
+                static void
 address1        (u8 v) { TWI0.SADDR = (v<<1)|1; } //gencall enabled, so check address in callback
-                static void 
+                static void
 address2        (u8 v, bool nomask) { TWI0.SADDRMASK = (v<<1)|nomask; }
-                static void 
+                static void
 off             () { TWI0.SCTRLA &= ~1; }
-                static void 
-on              () 
-                { //if master/slave pins are the same, not in dual mode so set FMPEN in CTRLA
-                  //if not the same, initPins already took care of FMPEN in the DUALCTRL register
-                if( twi0_pins.MpinSCL == twi0_pins.SpinSCL ) TWI0.CTRLA |= 2;
-                TWI0.SCTRLA |= 1; 
+                static void
+on              ()
+                {
+		        TWI0.CTRLA |= 2; //FM+ enable (if dual mode, twim0s_init_pins took care of slave FM+)
+                TWI0.SCTRLA |= 1;
                 }
-                static u8   
+                static u8
 read            () { return TWI0.SDATA; }
-                static void 
+                static void
 write           (u8 v) { TWI0.SDATA = v; }
-                static void 
+                static void
 irqAllOn        () { TWI0.SCTRLA |= 0xE0; }
-                static void 
+                static void
 irqAllOff       () { TWI0.SCTRLA &= ~0xE0; }
-                static u8   
+                static u8
 status          () { return TWI0.SSTATUS; }
-                static void 
+                static inline void
 clearFlags      () { TWI0.SSTATUS = 0xCC; }
-                static void 
+                static void
 nackComplete    () { TWI0.SCTRLB = 6; } //COMPTRANS, NACK
-                static void 
+                static void
 ack             () { TWI0.SCTRLB = 3; } //RESPONSE, ACK
 
                 //local enum
@@ -48,17 +48,17 @@ ack             () { TWI0.SCTRLB = 3; } //RESPONSE, ACK
                        DIF_R = 0x82, DIF_W = 0x80, APIF_ADDR = 0x41, APIF_STOP = 0x40 };
 
                 //v = a copy of SSTATUS (used in isr)
-                static bool 
+                static bool
 isDataRead      (u8 v) { return (v & DIF_DIRbm) == DIF_R; }         //DIF, DIR(1=R)
-                static bool 
+                static bool
 isDataWrite     (u8 v) { return (v & DIF_DIRbm) == DIF_W; }         //DIF, DIR(0=W)
-                static bool 
+                static bool
 isAddress       (u8 v) { return (v & APIF_APbm) == APIF_ADDR; }     //APIF, AP(1=addr)
-                static bool 
+                static bool
 isStop          (u8 v) { return (v & APIF_APbm) == APIF_STOP; }     //APIF, AP(0=stop)
-                static bool 
+                static bool
 isRxNack        (u8 v) { return (v & RXNACKbm); }                   //RXACK(0=ACK,1=NACK)
-                static bool 
+                static bool
 isError         (u8 v) { return (v & ERRbm); }                      //COLL,BUSERR
 
                 //callback function returns true if want to proceed
@@ -87,54 +87,30 @@ ISR             (TWI0_TWIS_vect)
                 done ? nackComplete() : ack();
                 }
 
-                static void 
-initPins        ()
-                { 
-                uint8_t
-                    scl = twi0_pins.SpinSCL & 7,        //extract all values for easier use/reading
-                    sca = twi0_pins.SpinSCA & 7, 
-                    clrbm = ~twi0_pins.pmux_clrbm,      //inverted for bitand use
-                    setbm = twi0_pins.pmux_setbm;
-                volatile uint8_t *pinctrl = &twi0_pins.Sport->PIN0CTRL;
-                volatile uint8_t *pmux = twi0_pins.pmux;
-
-                //enable pullups and set portmux as needed (some have no alt pins, so no twi portmux)
-                pinctrl[scl] |= PORT_PULLUPEN_bm;
-                pinctrl[sca] |= PORT_PULLUPEN_bm;
-                if( pmux ) *pmux = (*pmux & clrbm) | setbm; //compiler will optimize if bitfield is a single bit
-
-                //turn on dual mode if master/slave pins are not the same
-                //will assume the user has setup twi0_pins properly, so wants to use dual mode
-                //not all mcu's have dual mode, so using offset from CTRLA to access DUALCTRL so
-                //can compile for all mcu's
-                if( twi0_pins.MpinSCL != twi0_pins.SpinSCL ) (&TWI0.CTRLA)[1] |= 1; //dual enable
-                }
-
 //============
 // public:
 //============
 
-                void    
+                void
 twis0_on        (u8 addr, twis_callback_t cb)
                 {
                 if( ! cb ) return;                  //do not accept callback set to 0
                 twis0_off();
-                initPins();
+                twis0_init_pins();                  //from twiPins.h
                 isrFuncCallback_ = cb;
                 address1( addr );
                 irqAllOn();
                 on();
                 }
-                void    
+                void
 twis0_off       () { irqAllOff(); off(); }
-                void    
+                void
 twis0_write     (u8 v) { write(v); }
-                u8      
+                u8
 twis0_read      () { return read(); }
-                u8      
+                u8
 twis0_lastAddress() { return lastAddress_; }        //last address we responded to
-                void    
+                void
 twis0_address2  (u8 v) { address2(v, true); }       //2nd address
-                void    
+                void
 twis0_addressMask(u8 v) { address2(v, false); }     //address mask (no 2nd address)
-

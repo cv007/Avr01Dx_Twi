@@ -1,9 +1,10 @@
-//======================================================================
-//  twim0.c - Twi0, master - avr mega0, tiny0/1, da, etc.
-//======================================================================
-#include "MyAvr.h"
-#include "twim0.h"
-#include "twiPins.h"
+                //======================================================================
+                //  twim0.c - Twi0, master - avr mega0, tiny0/1
+                //======================================================================
+
+                #include "MyAvr.h"
+                #include "twim0.h"
+                #include "twiPins.h"
 
 //==========
 // private:
@@ -101,45 +102,6 @@ ISR             (TWI0_TWIM_vect)
                 finished( false );
                 }
 
-                static void 
-initPins        (bool busRecovery) //false = no bus recovery, true = also do bus recovery
-                { 
-                uint8_t
-                    scl = twi0_pins.MpinSCL & 7,        //extract all values for easier use/reading
-                    sca = twi0_pins.MpinSCA & 7, 
-                    clrbm = ~twi0_pins.pmux_clrbm,      //inverted for bitand use
-                    setbm = twi0_pins.pmux_setbm;
-                volatile uint8_t *pinctrl = &twi0_pins.Mport->PIN0CTRL; 
-                volatile uint8_t *pmux = twi0_pins.pmux;
-
-                off(); //turn off twi
-
-                //enable pullups and set portmux as needed (some have no alt pins, so no twi portmux)
-                pinctrl[scl] = PORT_PULLUPEN_bm; //assignment, will set all other bits to 0
-                pinctrl[sca] = PORT_PULLUPEN_bm; // if need invert or isc bits for some reason, change to |=
-                if( pmux ) *pmux = (*pmux & clrbm) | setbm; //compiler will optimize if bitfield is a single bit
-                if( busRecovery == false ) return;
-
-                //also do bus recovery
-
-                uint8_t sclbm = 1<<(twi0_pins.MpinSCL & 7), scabm = 1<<(twi0_pins.MpinSCA & 7);
-                PORT_t* pt = twi0_pins.Mport; 
-
-                pt->OUTSET = sclbm;             //scl high
-                pt->DIRSET = sclbm;             //scl output
-                for( u8 i = 0; i < 19; i++ ){   //10 clocks (20 toggles, but leave low so 19)
-                    pt->OUTTGL = sclbm;
-                    _delay_us( 5 );             //5us half cycle = 100khz
-                    }
-                //produce a stop 
-                pt->OUTCLR = scabm;             //sca low
-                pt->DIRSET = scabm;             //sca output
-                _delay_us( 30 );
-                pt->DIRCLR = sclbm;             //scl back to input w/pullup
-                _delay_us( 30 );
-                pt->DIRCLR = scabm;             //sca back to input w/pullup
-                }
-
 //==========
 // public:
 //==========
@@ -149,12 +111,13 @@ twim0_callback  (twim_callbackT cb) { isrFuncCallback_ = cb; } //optional, else 
                 void
 twim0_off       () { off(); }
                 void
-twim0_on        (u8 addr) 
-                { 
-                initPins(false); //will also turn off twim (false=no bus recovery)
-                address(addr); 
-                toStateIdle(); 
-                on(); 
+twim0_on        (u8 addr)
+                {
+                off();
+                twim0_init_pins(); //from twiPins.h
+                address(addr);
+                toStateIdle();
+                on();
                 }
                 bool
 twim0_isBusy    () { return isBusy(); } //if irq on, is busy
@@ -204,5 +167,11 @@ twim0_waitUS    (u16 us)
                 //NOTE: if you are running the slave on the same pins for some reason
                 //      (not normal), the slave will also need to be disabled so it
                 //      releases its pins (which are the same pins)
-                void 
-twim0_busRecovery() { initPins(true); }
+                //this will return with the pins in the input/pullup state
+                //and twi off
+                void
+twim0_bus_recovery() 
+                { 
+                off(); 
+                twim0_recover_pins(); 
+                }
