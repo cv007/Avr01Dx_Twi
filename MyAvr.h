@@ -11,10 +11,11 @@
 
 //======================================================================
 //  global F_CPU for delays, or any timing calculations
+//  (value must match actual speed of mcu, which you set)
 //======================================================================
 
                 #ifndef F_CPU
-                #define F_CPU 3333333ul
+                #define F_CPU 3333333ul //default speed when using OSC20M
                 #endif
                 #include <util/delay.h>
 

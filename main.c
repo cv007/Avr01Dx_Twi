@@ -40,14 +40,20 @@ pin_off         (pin_t p){ p.invert ? pin_high(p) : pin_low(p); }
                 /*------------------------------------------------------------------------------
                     Blinker I2C device - example i2c device on this mcu
 
-                        twi0 slave address 0x51
+                    twi0 slave address 0x51
 
-                        slave device has 1 register at address 0x00
-                        which sets or reads the state of the led
-                        if register 0x00 is written to a value >0, then the led will be turned on
-                        if register 0x00 is written to a value =0, then the led will be turned off
-                        reading register 0x00 will return the current state of the led
+                    slave device has 1 register at address 0x00
+                    which sets or reads the state of the led
+                    if register 0x00 is written to a value >0, then the led will be turned on
+                    if register 0x00 is written to a value =0, then the led will be turned off
+                    reading register 0x00 will return the current state of the led
 
+                    to turn on led-
+                        addressW 0x51, write value 0x00, write value 0x01, stop
+                    to turn off led-
+                        addressW 0x51, write value 0x00, write value 0x00, stop
+                    to read led state-
+                        addressW 0x51, write value 0x00, addressR 0x51, read value, stop
                 ------------------------------------------------------------------------------*/
 
                 enum { BLINKER_SLAVE_ADDRESS = 0x51 };
@@ -56,8 +62,8 @@ pin_off         (pin_t p){ p.invert ? pin_high(p) : pin_low(p); }
 blinkerCallback (twis_irqstate_t state, u8 statusReg)
                 {
                 static bool is1stwrite;
-                static u8 led_state;
-                static u8 reg_addr; //only looking for 0x00
+                static bool led_state;
+                static u8 reg_addr = 0xFF; //only looking for 0x00
 
                 bool ret = true; //assume ok to continue transaction
 
@@ -69,8 +75,8 @@ blinkerCallback (twis_irqstate_t state, u8 statusReg)
                         else is1stwrite = true; //yes, expect a register address write
                         break;
 
-                    case TWIS_MREAD: //master read, so slave writes
-                        twis0_write( led_state );
+                    case TWIS_MREAD: //master read, so slave writes                                            
+                        twis0_write( reg_addr == 0 ? led_state : 0xFF ); //if reg was not set, send 0xFF
                         break;
 
                     case TWIS_MWRITE: { //parens so we can create a var inside case without error
@@ -78,20 +84,21 @@ blinkerCallback (twis_irqstate_t state, u8 statusReg)
                         if( is1stwrite ){ //if first write, is a register address write
                             is1stwrite = false;
                             reg_addr = v; //register address (should be 0x00)
-                            break;
+                            break; //now wait for next write
                             }
-                        if( reg_addr != 0 ){
+                        if( reg_addr != 0 ){ //second write
                             ret = false; //invalid register address
                             break;
                             }
-                        led_state = v;
-                        reg_addr = 0xFF; //invalidate any more writes in same transaction
+                        led_state = v; //set led state to value received
+                        reg_addr = 0xFF; //invalidate any more writes in the same transaction
                         if( led_state ) pin_on(led); else pin_off(led);
                         }
                         break;
 
                     case TWIS_STOPPED:
                     case TWIS_ERROR:
+                        reg_addr = 0xFF;
                         ret = false;
                         break;
 
