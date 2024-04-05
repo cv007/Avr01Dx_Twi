@@ -38,17 +38,26 @@
                         twim0_writeRead( wbuf, 1, rbuf, 4 );//write 1 byte (0x55), read 4 bytes
 
                         //blocking until done or a timeout (us)
-                        if( twim0_waitUS(3000) ){}          //result ok, rbuf has 4 bytes
-                        else if( twim0_isBusy() ){          //was timeout, (twim irqs may still be on)
+                        twim_state_t res = twim0_waitUS(3000);
+                        if( res == TWIM_OK ){}              //result ok, rbuf has 4 bytes
+                        else if( res == TWIM_TIMEOUT ){     //was timeout, (twim irqs may still be on)
                             twim0_bus_recovery();
                             }
-                        else {}                             //was nack'd or bus error/collision (twim irqs are off)
+                        else {                              //was nack'd or bus error/collision (twim irqs are off)
 
-                        twim0_off();
+                            }
+                        twim0_off();                        //turn off (back to TWIM_OFF state)
 
                         NOTE: FM+ mode is always used but if do not want it you can modify
                             the twim0_on() function
                 ------------------------------------------------------------------------------*/
+
+                // off (twi is off) -> ready (twi is on) -> busy (transaction started, twi irq's on)
+                // -> ok (transaction completed without error, twi irq's are off)
+                // -> timeout (blocking/polling timed out, do twim0_bus_recovery)
+                // -> error (transaction had an error- nack, bus collision, etc., do twim0_bus_recovery)
+                typedef enum { TWIM_OFF, TWIM_READY, TWIM_BUSY, TWIM_OK, TWIM_TIMEOUT, TWIM_ERROR } 
+twim_state_t;
 
                 typedef void (*twim_callbackT)(void);
 
@@ -58,8 +67,8 @@ twim0_on        (u8 address);
 twim0_off       ();
                 bool 
 twim0_isBusy    ();
-                bool 
-twim0_resultOK  ();
+                twim_state_t 
+twim0_state     ();
                 void 
 twim0_callback  (twim_callbackT callbackFunction);
                 void 
@@ -70,7 +79,7 @@ twim0_writeWrite(const u8* writeBuffer, u16 writeLength, const u8* writeBuffer2,
 twim0_write     (const u8* writeBuffer, u16 writeLength);
                 void 
 twim0_read      (u8* readBuffer, u16 readLength);
-                bool 
+                twim_state_t 
 twim0_waitUS    (u16 microseconds);
                 void 
 twim0_bus_recovery();

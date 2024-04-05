@@ -17,7 +17,7 @@
                 static const u8*        txbuf2End_;
                 static u8*              rxbuf_;
                 static const u8*        rxbufEnd_;
-                static volatile bool    lastResult_; //1=ok,0=fail
+                static volatile twim_state_t state_;
 
                 //local enums
 
@@ -34,11 +34,11 @@
                 enum { ENABLE = 1 }; //on/off
 
                 static void
-on              () { TWI0.CTRLA |= 2; TWI0.MCTRLA |= ENABLE; } //FM+ enable in ctrla
+on              () { TWI0.CTRLA |= 2; TWI0.MCTRLA |= ENABLE; state_ = TWIM_READY; } //FM+ enable in ctrla
                 static void
-off             () { TWI0.MCTRLA = 0; }
+off             () { TWI0.MCTRLA = 0; state_ = TWIM_OFF; }
                 static void
-irqAllOn        () { TWI0.MCTRLA |=  RWIEN; }
+irqAllOn        () { TWI0.MCTRLA |=  RWIEN; state_ = TWIM_BUSY; }
                 static void
 irqAllOff       () { TWI0.MCTRLA &= ~RWIEN; }
                 static void
@@ -61,21 +61,19 @@ write           (u8 v) { TWI0.MDATA = v; }
 read            () { return TWI0.MDATA; }
                 static u8
 status          () { return TWI0.MSTATUS; }
-                static bool
-isBusy          () { return TWI0.MCTRLA & RWIEN; }
+
 
                 static void
 startIrq        (bool wr) //start a read (wr=0) or write (wr=1), enable irq
                 {
                 wr ? startWrite() : startRead();
-                lastResult_ = false;
                 irqAllOn();
                 }
 
                 static void
 finished        (bool tf) //for isr use, tf=true if success
                 {
-                lastResult_ = tf;
+                state_ = tf ? TWIM_OK : TWIM_ERROR;
                 //NACKstop works for write also (nack not done, harmless)
                 NACKstop();
                 irqAllOff(); //do before callback in case call back starts another xfer
@@ -119,10 +117,8 @@ twim0_on        (u8 addr)
                 toStateIdle();
                 on();
                 }
-                bool
-twim0_isBusy    () { return isBusy(); } //if irq on, is busy
-                bool
-twim0_resultOK  () { return lastResult_; }
+                twim_state_t
+twim0_state     () { return state_; }
 
                 //write+read (or write only, or read only)
                 void
@@ -153,14 +149,12 @@ twim0_write     (const u8* wbuf, u16 wn) { twim0_writeRead( wbuf, wn, 0, 0); }
 twim0_read      (u8* rbuf, u16 rn) { twim0_writeRead( 0, 0, rbuf, rn); }
 
                 //blocking wait with timeout
-                //if false is returned, caller can check twim0_isBusy() to see
-                //if was a timeout or an error (isBusy will be true if timeout)
-                //caller then can do a bus recovery if wanted
-                bool
+                twim_state_t
 twim0_waitUS    (u16 us)
                 {
-                while( _delay_us(1), --us && twim0_isBusy() ){}
-                return twim0_resultOK(); //true = ok, false = error or timeout
+                while( _delay_us(1), --us && state_ == TWIM_BUSY ){}
+                if( us && state_ == TWIM_BUSY ) state_ = TWIM_TIMEOUT;
+                return state_;
                 }
 
                 //recover locked up bus
@@ -175,3 +169,5 @@ twim0_bus_recovery()
                 off(); 
                 twim0_recover_pins(); 
                 }
+
+

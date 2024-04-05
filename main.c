@@ -112,26 +112,26 @@ blinkerCallback (twis_irqstate_t state, u8 statusReg)
                 ------------------------------------------------------------------------------*/
 
                 //master to slave (blinker)
-                static bool
+                static twim_state_t
 blinkerWriteM   (u8 const reg, const u8 v)
                 {
                 twim0_baud( F_CPU, 100000ul );
                 twim0_on( BLINKER_SLAVE_ADDRESS );
                 twim0_writeWrite( &reg, 1, &v, 1 ); //write register address, write value
-                bool ret = twim0_waitUS( 3000 );
+                twim_state_t res = twim0_waitUS( 3000 );
                 twim0_off();
-                return ret;
+                return res;
                 }
 
-                static bool
+                static twim_state_t
 blinkerReadM    (u8 reg, u8* v)
                 {
                 twim0_baud( F_CPU, 100000ul );
                 twim0_on( BLINKER_SLAVE_ADDRESS );
                 twim0_writeRead( &reg, 1, v, 1 ); //write register address, read value
-                bool ret = twim0_waitUS( 3000 );
+                twim_state_t res = twim0_waitUS( 3000 );
                 twim0_off();
-                return ret;
+                return res;
                 }
 
                 static void
@@ -161,14 +161,14 @@ main            ()
 
                 //loop every 1/2 second
                 while( waitMS(500), 1 ) {
-                    if( ! blinkerWriteM( 0x00, led_state ) ){
+                    if( blinkerWriteM( 0x00, led_state ) != TWIM_OK ){
                         blinkerResetM(); //if any error, do bus recovery
                         continue;
                         }
 
                     //get value from register (should be same as what we just wrote)
                     u8 tmp;
-                    if( ! blinkerReadM(0x00, &tmp) || tmp != led_state ){
+                    if( blinkerReadM(0x00, &tmp) != TWIM_OK || tmp != led_state ){
                         blinkerResetM(); //if any error, do bus recovery
                         continue; //start over
                         }
