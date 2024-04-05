@@ -65,6 +65,8 @@ blinkerCallback (twis_irqstate_t state, u8 statusReg)
                 static bool led_state;
                 static u8 reg_addr = 0xFF; //only looking for 0x00
 
+                (void)statusReg; //unused here, so do this to prevent any compiler warning
+
                 bool ret = true; //assume ok to continue transaction
 
                 switch( state ) {
@@ -75,7 +77,7 @@ blinkerCallback (twis_irqstate_t state, u8 statusReg)
                         else is1stwrite = true; //yes, expect a register address write
                         break;
 
-                    case TWIS_MREAD: //master read, so slave writes                                            
+                    case TWIS_MREAD: //master read, so slave writes
                         twis0_write( reg_addr == 0 ? led_state : 0xFF ); //if reg was not set, send 0xFF
                         break;
 
