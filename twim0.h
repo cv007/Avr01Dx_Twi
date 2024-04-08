@@ -8,8 +8,8 @@
 
 
                 /*------------------------------------------------------------------------------
-                    1. in twiPins.h, create a define at end of file to 
-                        init the pins (see end of twiPins.h for examples)
+                    1. in twiPins.h, create defines at end of file to 
+                        init the pins (see end of twiPins.h for examples), and do bus recovery
                     2. set baud
                         twim0_baud( F_CPU, 100000ul ); //100kHz
                     3. turn on, specifying slave address
@@ -48,8 +48,14 @@
                             }
                         twim0_off();                        //turn off (back to TWIM_OFF state)
 
-                        NOTE: FM+ mode is always used but if do not want it you can modify
+                        NOTE: 
+                            FM+ mode is always used but if do not want it you can modify
                             the twim0_on() function
+
+                            when using a callback (instead of blocking/polling), keep in mind
+                            your write/read buffers will need to be static buffers amd not
+                            locally created buffers as they would be on the stack and invalid
+                            once you return from the current function
                 ------------------------------------------------------------------------------*/
 
                 // off (twi is off) -> ready (twi is on) -> busy (transaction started, twi irq's on)

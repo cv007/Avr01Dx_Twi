@@ -69,29 +69,29 @@ twi_init_pmux   (twi_pin_t p)
                 static twi_pin_t twi_PF32 = { &PORTF, 3, 2, 3, PORTMUX_TWI0_gm, PORTMUX_TWI0_ALT1_gc };
 
                 static inline void
-init_PA32   	()
+twi_init_PA32   ()
                 {
                 twi_init_pins(twi_PA32);
                 twi_init_pmux(twi_PA32);
                 }
 
                 static inline void
-recover_PA32    () { twi_bus_recovery(twi_PA32); }
+twi_recover_PA32() { twi_bus_recovery(twi_PA32); }
 
                 static inline void
-init_PC32   	()
+twi_init_PC32   ()
                 {
                 twi_init_pins(twi_PC32);
                 twi_init_pmux(twi_PC32);
                 }
 
                 static inline void
-recover_PC32    () { twi_bus_recovery(twi_PC32); }
+twi_recover_PC32() { twi_bus_recovery(twi_PC32); }
 
                 //dual mode
 
                 static inline void
-init_PA32_PC32	()
+twi_init_PA32_PC32()
                 {
                 twi_init_pins(twi_PA32);
                 twi_init_pins(twi_PC32);
@@ -101,7 +101,7 @@ init_PA32_PC32	()
 
 
                 static inline void
-init_PA32_PF32	()
+twi_init_PA32_PF32()
                 {
                 twi_init_pins(twi_PA32);
                 twi_init_pins(twi_PF32);
@@ -110,7 +110,7 @@ init_PA32_PF32	()
                 }
 
                 static inline void
-init_PC32_PF32	()
+twi_init_PC32_PF32()
                 {
                 twi_init_pins(twi_PC32);
                 twi_init_pins(twi_PF32);
@@ -128,24 +128,24 @@ init_PC32_PF32	()
                 static twi_pin_t twi_PA21 = { &PORTA, 2, 1, 1, PORTMUX_TWI0_bm, PORTMUX_TWI0_bm };
 
                 static inline void
-init_PB01   	()
+twi_init_PB01   ()
                 {
                 twi_init_pins( twi_PB01 );
                 twi_init_pmux( twi_PB01 );
                 }
 
                 static inline void
-recover_PB01    () { twi_bus_recovery( twi_PB01 ); }//&PORTB,0,1); }
+twi_recover_PB01() { twi_bus_recovery( twi_PB01 ); }
 
                 static inline void
-init_PA21   	()
+twi_init_PA21   ()
                 {
                 twi_init_pins( twi_PA21 );
                 twi_init_pmux( twi_PA21 );
                 }
 
                 static inline void
-recover_PA21    () { twi_bus_recovery( twi_PA21 ); }//&PORTA,2,1); }
+twi_recover_PA21() { twi_bus_recovery( twi_PA21 ); }
 
                 //------------------------------
                 // tiny0/1 no alternate pins
@@ -155,14 +155,14 @@ recover_PA21    () { twi_bus_recovery( twi_PA21 ); }//&PORTA,2,1); }
                 static twi_pin_t twi_PB01 = { &PORTB, 0, 1, 0, 0, 0 };
 
                 static inline void
-init_PB01   	()
+twi_init_PB01   ()
                 {
                 twi_init_pins(twi_PB01);
                 //no portmux
                 }
 
                 static inline void
-recover_PB01    () { twi_bus_recovery(twi_PB01); }
+twi_recover_PB01() { twi_bus_recovery(twi_PB01); }
 
                 #endif
 
@@ -179,7 +179,7 @@ recover_PB01    () { twi_bus_recovery(twi_PB01); }
                 //master on PB01
                 #define twim0_init_pins()       init_PB01()
                 #define twis0_init_pins()       //unused
-                #define twim0_bus_recovery()    recover_PB01()
+                #define twim0_bus_recovery()    twi_recover_PB01()
 
                 //slave on PB01
                 #define twim0_init_pins()       //unused
@@ -189,13 +189,13 @@ recover_PB01    () { twi_bus_recovery(twi_PB01); }
                 //master+slave in dual mode
                 #define twim0_init_pins()       init_PA32_PC32()
                 #define twis0_init_pins()       //unused
-                #define twim0_bus_recovery()    recover_PA32() //master pins
+                #define twim0_bus_recovery()    twi_recover_PA32() //master pins
                 */
 
 
                 //for the example app, we are using the same pins for master/slave
                 //(so slave will not also init pins, our define set to do nothing)
-                #define twim0_init_pins()       init_PB01()
-                #define twis0_init_pins()
+                #define twim0_init_pins()       twi_init_PB01()
+                #define twis0_init_pins()       //unused
                 //for master, set which pins to use to do bus recovery
-                #define twim0_recover_pins()    recover_PB01()
+                #define twim0_recover_pins()    twi_recover_PB01()
