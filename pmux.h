@@ -6,12 +6,13 @@
 
                 #include "MyAvr.h"
 
+
                 //------------------------------
                 // mega0
                 //------------------------------
                 #if defined PORTMUX_TWISPIROUTEA
 
-                typedef enum { PMUX_TWI0_DEFAULT = 0, PMUX_TWI0_ALT1 = 1,PMUX_TWI0_ALT2 = 2 } pmux_twi_t;
+                typedef enum { PMUX_TWI0_DEFAULT = 0, PMUX_TWI0_ALT1 = 1, PMUX_TWI0_ALT2 = 2 } pmux_twi_t;
 
                 static inline void
 pmux_twi        (pmux_twi_t e)

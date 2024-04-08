@@ -38,9 +38,9 @@ twi_bus_recovery(twi_pin_t p)
                 //now produce a stop
                 port->OUTCLR = sda_bm; //sda low
                 port->DIRSET = sda_bm; //sda output
-                _delay_us( 30 );
+                _delay_us( 10 );
                 port->DIRCLR = scl_bm; //scl back to input w/pullup
-                _delay_us( 30 );
+                _delay_us( 10 );
                 port->DIRCLR = sda_bm; //sca back to input w/pullup
                 }
 

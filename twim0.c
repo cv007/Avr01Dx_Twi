@@ -100,6 +100,16 @@ ISR             (TWI0_TWIM_vect)
                 finished( false );
                 }
 
+                static void
+twim0_transaction(const u8* wbuf, u16 wn, const u8* wbuf2, u16 wn2, u8* rbuf, u16 rn)
+                {
+                if( wn == 0 && wn2 == 0 && rn == 0 ) return; //nothing to do
+                txbuf_ = wbuf; txbufEnd_ = &wbuf[wn];
+                rxbuf_ = rbuf; rxbufEnd_ = &rbuf[rn];
+                txbuf2_ = wbuf2; txbuf2End_ = &wbuf2[wn2];
+                startIrq( wn || wn2 ); //if any write, start a write irq else start a read irq
+                }
+
 //==========
 // public:
 //==========
@@ -120,33 +130,18 @@ twim0_on        (u8 addr)
                 twim_state_t
 twim0_state     () { return state_; }
 
-                //write+read (or write only, or read only)
+                //write+read
                 void
-twim0_writeRead (const u8* wbuf, u16 wn, u8* rbuf, u16 rn)
-                {
-                txbuf_ = wbuf; txbufEnd_ = &wbuf[wn];
-                rxbuf_ = rbuf; rxbufEnd_ = &rbuf[rn];
-                txbuf2_ = 0; txbuf2End_ = 0;
-                startIrq( wn ); //if no write (wn==0), then will start a read irq
-                }
-
-                //write/write (such as a command, then a buffer)
+twim0_writeRead (const u8* wbuf, u16 wn, u8* rbuf, u16 rn) { twim0_transaction( wbuf, wn, 0, 0, rbuf, rn ); }
+                //write+write
                 void
-twim0_writeWrite(const u8* wbuf, u16 wn, const u8* wbuf2, u16 wn2)
-                {
-                txbuf_ = wbuf; txbufEnd_ = &wbuf[wn];
-                txbuf2_ = wbuf2; txbuf2End_ = &wbuf2[wn2];
-                rxbuf_ = 0; rxbufEnd_ = 0; //no read
-                startIrq( 1 ); //write only
-                }
-
-                //write only alias
+twim0_writeWrite(const u8* wbuf, u16 wn, const u8* wbuf2, u16 wn2) { twim0_transaction( wbuf, wn, wbuf2, wn2, 0, 0 ); }
+                //write only
                 void
-twim0_write     (const u8* wbuf, u16 wn) { twim0_writeRead( wbuf, wn, 0, 0); }
-
-                //read only alias
+twim0_write     (const u8* wbuf, u16 wn) { twim0_transaction( wbuf, wn, 0, 0, 0, 0 ); }
+                //read only
                 void
-twim0_read      (u8* rbuf, u16 rn) { twim0_writeRead( 0, 0, rbuf, rn); }
+twim0_read      (u8* rbuf, u16 rn) { twim0_transaction( 0, 0, 0, 0, rbuf, rn ); }
 
                 //blocking wait with timeout
                 twim_state_t
@@ -164,10 +159,10 @@ twim0_waitUS    (u16 us)
                 //this will return with the pins in the input/pullup state
                 //and twi off
                 void
-twim0_bus_recovery() 
-                { 
-                off(); 
-                twim0_recover_pins(); 
+twim0_bus_recovery()
+                {
+                off();
+                twim0_recover_pins();
                 }
 
 
