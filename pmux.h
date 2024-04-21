@@ -36,17 +36,11 @@ pmux_twi        (pmux_twi_t e)
 
 
                 //------------------------------
-                // tiny0/1 no alternate pins
+                // tiny0/1/2 no alternate pins
                 //------------------------------
-                #elif defined PORTMUX_CTRLB
+                #else
 
                 //allow twiPins.h to populate twi_pin_t, but will be unused
                 typedef enum { PMUX_TWI0_DEFAULT = 0 } pmux_twi0_t;
 
-
-                //------------------------------
-                // unknown avr
-                //------------------------------
-                #else
-                #error "pmux.h - unknown avr in use, add code as needed"
                 #endif
