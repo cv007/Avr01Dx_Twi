@@ -143,9 +143,9 @@ twi0_init_PA21  ()
 twi0_recover_PA21() { twi_bus_recovery( twi_PA21 ); }
 
                 //------------------------------
-                // tiny0/1 no alternate pins
+                // tiny0/1/2 no alternate pins
                 //------------------------------
-                #elif defined PORTMUX_CTRLB
+                #else
 
                 static twi_pin_t twi_PB01 = { &PORTB, 0, 1, PMUX_TWI0_DEFAULT };
 
@@ -159,12 +159,6 @@ twi0_init_PB01  ()
                 static inline void
 twi0_recover_PB01() { twi_bus_recovery(twi_PB01); }
 
-
-                //------------------------------
-                // unknown avr
-                //------------------------------
-                #else
-                #error "twiPins.h - unknown avr in use, add code as needed"
                 #endif
 
 
