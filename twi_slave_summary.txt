@@ -1,0 +1,46 @@
+twi slave summary of example
+
+           DIF APIF CLKHOLD RXACT COLL BUSERR DIR AP  status
+isAddressR  0    1     1     x      0     0    1   1  0x63|0x73 (ignore RXACK)
+isAddressW  0    1     1     x      0     0    0   1  0x61|0x71 (ignore RXACK)
+isDataR     1    0     1     x      0     0    1   1  0xA3|0xB3 (ignore RXACK for 1st read, valid for following reads)
+isDataW     1    0     1     x      0     0    0   1  0xA1|0xB1 (ignore RXACK)
+isStop      0    1     0     x      0     0    x   0  0x40|0x42|0x50|0x52 (ignore RXACK,DIR)
+
+[functions]
+ack()          -> SCTRLB = 3 (RESPONSE+ACK)
+                  [ACK unused for master reads, so ack() then means 'continue']
+nackComplete() -> SCTRLB = 6 (COMPTRANS+NACK)
+                  [NACK unused for master reads, so nackComplete() then means 'we are done']
+                  [commands will also release CLKHOLD, which will be set for DIF and APIF]
+read()         -> return SDATA
+write(v)       -> SDATA = v
+
+
+for the github example code (address/data/stop irq's enabled)
+hex value of status register at each slave isr entry-
+
+SSTATUS [0x71 0xB1 0xB1 0x50]
+master address(W)                   0x71    read() to get address if needed,
+                                            ack() if want to respond, nackComplete() if not
+master write (set register addr)    0xB1    read(), ack()
+master write (set register value)   0xB1    read(), ack()
+master stop                         0x50    nackComplete() (just need to clear APIF flag)
+
+SSTATUS [0x71 0xB1 0x73 0xB3 0xB3 0x52]
+master address(W)                   0x71    read() to get address if needed,
+                                            ack() if want to respond, nackComplete() if not
+master write (set register addr)    0xB1    read(), ack()
+master address(R)                   0x73    read() to get address if needed,
+                                            ack() if want to respond, nackComplete() if not
+                                            [notice DIF not set yet, but will set once we ack()]
+master read (read register value)   0xB3    ignore RXACK, is 1st byte so RXACK bit invalid, write(someval), ack()
+master read (read register value)   0xB3    master ack'd previous byte sent (RXACK=0)
+                                            option 1- we have more data to send-
+                                                      write(someval), ack()
+                                            option 2- we have no more data to send-
+                                                      write(0xFF), ack()
+                                            option 3- we have no more data to send (or master nack'd previous byte)-
+                                                      nackComplete() to consider the transaction complete (will still see the stop)
+                                            [when master chooses to stop, any data we put in SDATA will not be clocked out]
+master stop                         0x52    nackComplete() (just need to clear APIF flag)
